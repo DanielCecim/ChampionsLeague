@@ -22,56 +22,91 @@ MATCH_TICKS = 18                  # 90 minutes total
 NUM_FANS = 50
 TEAM_SIZE = 11
 
-# Probabilities (tweak if you like)
-PROB_FOUL_DEF = 0.10              # DEF fouls (only when FWD has ball)
+# Probabilities of events
+PROB_FOUL_DEF = 0.10              # Faul from Defender to Forward (either team)
 PROB_FOUL_MID = 0.06              # MID fouls (only when FWD has ball)
-PROB_STEAL_FWD_BY_DEF_OR_GK = 0.20
-PROB_STEAL_MID_BY_MID = 0.12
-PROB_STEAL_DEF_BY_FWD = 0.18
-PROB_SHOT_FWD = 0.25              # FWD with ball chooses shot vs pass
+PROB_STEAL_FWD_BY_DEF_OR_GK = 0.20 #Probability of a successful steal by defender or goalkeeper
+PROB_STEAL_MID_BY_MID = 0.15   #Probability of a successful steal by midfielder
+PROB_STEAL_DEF_BY_FWD = 0.20 #Probabilirt of a successful steal by forward.
+PROB_SHOT_FWD = 0.25              # FWD with ball chooses to shoot or pass
 PROB_SAVE_BY_GK = 0.55            # GK save chance if shot on target
-PROB_SHOT_ON_TARGET = 0.65
-PROB_QUEUE_VISIT = 0.75           # fan decides to buy food (pre-match)
-PROB_BUY_SOMETHING = 0.85
+PROB_SHOT_ON_TARGET = 0.40
+PROB_QUEUE_VISIT = 0.75           # fan decides to enter a shop
+PROB_BUY_SOMETHING = 0.85  #fan decides to actually buy something
 
 # Streakers
-PROB_STREAK_PREGAME = 0.0         # disable pregame streaks for clarity
-PROB_STREAK_MATCH = 0.0001        # 0.01% per fan per tick
+PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan 
 
 # Shop config
 SHOP_STOCK = {"pies": 60, "sodas": 90, "scarves": 30}
 SHOP_PRICES = {"pies": 8, "sodas": 5, "scarves": 15}
 SHOP_QUEUE_MAX = 12
 CASHIERS = 2
+# Define stock and prices for food and merch shops
+FOOD_SHOPS = [
+  {"stock": {"hotdogs": 50, "burgers": 40, "fries": 100}, "prices": {"hotdogs": 6, "burgers": 8, "fries": 4}},
+  {"stock": {"pizza": 30, "sodas": 80, "water": 100}, "prices": {"pizza": 10, "sodas": 5, "water": 2}},
+  {"stock": {"nachos": 40, "popcorn": 60, "sodas": 70}, "prices": {"nachos": 7, "popcorn": 5, "sodas": 4}},
+  {"stock": {"sandwiches": 50, "coffee": 40, "tea": 30}, "prices": {"sandwiches": 6, "coffee": 3, "tea": 2}},
+  {"stock": {"churros": 60, "chocolate": 50, "water": 90}, "prices": {"churros": 5, "chocolate": 4, "water": 2}},
+]
+
+MERCH_SHOPS = [
+  {"stock": {"Barca scarves": 20, "Barca jerseys": 15}, "prices": {"Barca scarves": 15, "Barca jerseys": 80}},
+  {"stock": {"Barca hats": 25, "Barca flags": 10}, "prices": {"Barca hats": 10, "Barca flags": 12}},
+  {"stock": {"Real scarves": 30, "Real jerseys": 20}, "prices": {"Real scarves": 15, "Real jerseys": 85}},
+  {"stock": {"Real hats": 40, "Real flags": 15}, "prices": {"Real hats": 12, "Real flags": 10}},
+  {"stock": {"Real mugs": 25, "Real keychains": 50}, "prices": {"Real mugs": 8, "Real keychains": 5}},
+]
 
 random.seed(7)
 
-# Lists of names
+# Lists of names (Barcelona and Real)
 PLAYER_NAMES = [
-    "Alex Johnson", "Jordan Lee", "Taylor Smith", "Casey Brown", "Morgan Davis",
-    "Riley Wilson", "Jamie Miller", "Avery Garcia", "Quinn Martinez", "Reese Hernandez",
-    "Charlie Robinson", "Dakota Clark", "Emerson Lewis", "Finley Walker", "Hayden Hall",
-    "Indigo Young", "Jesse King", "Kendall Scott", "Logan Green", "Micah Adams",
-    "Nico Baker", "Owen Carter", "Parker Edwards", "Quinn Flores", "Riley Gonzales"
+    # Barcelona (Inverted order)
+    "Marc-André ter Stegen",
+    "Jules Koundé", "Pau Cubarsí", "Ronald Araújo", "Alejandro Balde",
+    "Frenkie de Jong", "Gavi", "Pedri",
+    "Raphinha", "Robert Lewandowski", "Lamine Yamal",
+    # Real Madrid (Inverted order) 
+    "Thibaut Courtois",
+    "Trent Alexander-Arnold", "Dani Carvajal", "Antonio Rüdiger", "Éder Militão",
+    "Aurélien Tchouaméni", "Federico Valverde", "Jude Bellingham",
+    "Rodrygo", "Vinícius Júnior", "Kylian Mbappé"
 ]
+
+# ---------------------------
+# Anthem
+# ---------------------------
+
+ANTHEM_LINES_BARCELONA = [
+    "♪ Tot el camp és un clam,",
+    "♪ Som la gent blaugrana,",
+    "♪ Tant se val d’on venim,",
+    "♪ Si del sud o del nord,",
+    "♪ Ara estem d’acord, estem d’acord,",
+    "♪ Una bandera ens agermana."]
+
+ANTHEM_LINES_MADRID = [
+    "♪ Historia que tú hiciste,",
+    "♪ Historia por hacer,",
+    "♪ Porque nadie resiste,",
+    "♪ Tus ganas de vencer.",]
 
 FAN_NAMES = [
-    "Sam Patel", "Alex Kim", "Jordan Nguyen", "Taylor Chen", "Casey Wong",
-    "Morgan Liu", "Riley Zhang", "Jamie Li", "Avery Wang", "Quinn Xu",
-    "Reese Zhao", "Charlie Zhou", "Dakota Sun", "Emerson Tan", "Finley Lim",
-    "Hayden Wu", "Indigo Huang", "Jesse Liang", "Kendall Shen", "Logan Guo",
-    "Micah Hu", "Nico Wei", "Owen Yao", "Parker Zhu", "Quinn Jiang",
-    "Riley Cao", "Jamie Deng", "Avery Fang", "Quinn Gong", "Reese Han",
-    "Charlie Huo", "Dakota Jin", "Emerson Kang", "Finley Lei", "Hayden Mao",
-    "Indigo Nie", "Jesse Pan", "Kendall Qiao", "Logan Ren", "Micah Song",
-    "Nico Tang", "Owen Wen", "Parker Xie", "Quinn Yan", "Riley Zeng",
-    "Jamie Zhong", "Avery Bao", "Quinn Chai", "Reese Dong", "Charlie Feng"
+    "Sergio Álvarez", "Alejandro Ruiz", "Jordi Navarro", "Tomás Ortega", "Carlos Vega",
+    "Marcos León", "Raúl Molina", "Diego Herrera", "Iván Castillo", "Luis Romero",
+    "Rubén Torres", "Javier Delgado", "Hugo Ramos", "Óscar Peña", "Pablo Lozano",
+    "Mario Iglesias", "Adrián Flores", "Miguel Duarte", "Andrés Cabrera", "David Serrano",
+    "Álvaro Morales", "Nicolás Herrera", "Gabriel Domínguez", "Pedro Vargas", "Lucas Fuentes",
+    "Martín Gutiérrez", "Daniel Bravo", "Manuel Calderón", "Francisco Pardo", "Cristian Rivas",
+    "Eduardo Campos", "Samuel Espinoza", "Antonio Méndez", "Enrique Pastor", "Joaquín Luna",
+    "Fernando Sanz", "Ricardo Cortés", "Julián Suárez", "Ramiro Ávila", "Héctor Gil",
+    "Víctor Salas", "Emilio Benítez", "Rodrigo Arias", "Esteban Cruz", "Adriano Nieto",
+    "Mateo Vargas", "Rafael Castillo", "Santiago Blanco", "Álex Navarro", "Ignacio Muñoz"
 ]
 
-# ---------------------------
-# Global match control
-# ---------------------------
-
+#Stadium class, essentially multiple event flags.
 class Stadium:
     def __init__(self):
         self.gates_open = threading.Event()
@@ -80,23 +115,21 @@ class Stadium:
 
 stadium = Stadium()
 
-tick_event = threading.Event()    # pulsed once per tick
+tick_event = threading.Event()    # flag, every 5 seconds
 end_event = threading.Event()     # set when match is over
-pause_event = threading.Event()   # set = play, clear = paused
-pause_event.set()
+pause_event = threading.Event()   # to pause the match when there is a streaker or halftime
+pause_event.set() # initially set, match hasnt started
 
-stoppage_lock = threading.Lock()  # serializes stoppages
-foul_lock = threading.Lock()      # one foul per incident
+stoppage_lock = threading.Lock()  #There are multiple events that can stop a match, streaks, penalties, faults, etc. Only one event can stop the clock at the time.
+foul_lock = threading.Lock()      # Only one faul can be happening at one time
 
-# ---------------------------
-# Shop
-# ---------------------------
+# Shop class
 
 class Shop:
     def __init__(self, stock, queue_max, cashiers):
         self.stock = dict(stock)
         self.stock_lock = threading.Lock()
-        self.queue_slots = threading.Semaphore(queue_max)
+        self.queue_slots = threading.Semaphore(queue_max) #Initialized to 12
         self.cashiers = threading.Semaphore(cashiers)
 
     def enter_queue(self, fan_name):
@@ -122,11 +155,11 @@ class Shop:
                 log(f"🧾 {fan.name} bought {item} for ${price}. Remaining ${fan.money}.")
                 return True
 
-shop = Shop(SHOP_STOCK, SHOP_QUEUE_MAX, CASHIERS)
+# Create food and merch shops
+food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in FOOD_SHOPS]
+merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in MERCH_SHOPS]
 
-# ---------------------------
 # Teams, Players, Ball
-# ---------------------------
 
 class Team:
     def __init__(self, name):
@@ -146,7 +179,6 @@ class Ball:
         with self.possession_lock:
             self.owner = player
             self.last_team = player.team.name
-            log(f"⚽ Ball now with {player}.")
 
     def get_owner(self):
         with self.possession_lock:
@@ -155,22 +187,9 @@ class Ball:
 ball = Ball()
 
 score_lock = threading.Lock()
-scoreboard = {"A": 0, "B": 0}
+scoreboard = {"Barcelona": 0, "Real Madrid": 0}
 
-# ---------------------------
-# Anthem
-# ---------------------------
-
-ANTHEM_LINES = [
-    "♪ The night is bright, the crowd ignites,",
-    "♪ Eleven hearts in blue and white,",
-    "♪ Eleven hearts in red and gold,",
-    "♪ The final’s tale is to be told!",
-]
-
-# ---------------------------
 # Clock
-# ---------------------------
 
 class MatchClock(threading.Thread):
     def __init__(self, tick_event, end_event):
@@ -194,7 +213,7 @@ class MatchClock(threading.Thread):
             if self.end_event.is_set(): break
 
             self.current_tick += 1
-            log(f"⏱️ Tick {self.current_tick}/{MATCH_TICKS}")
+            log(f"⏱️ Minute {self.current_tick*5}/90")
             self.tick_event.set()
             time.sleep(0.03)
             self.tick_event.clear()
@@ -202,9 +221,7 @@ class MatchClock(threading.Thread):
         log("⏱️ Match clock ends.")
         self.end_event.set()
 
-# ---------------------------
 # Fans
-# ---------------------------
 
 class Fan(threading.Thread):
     def __init__(self, idx):
@@ -217,12 +234,6 @@ class Fan(threading.Thread):
         else:
             self.money = random.randint(5, 50)
             self.is_rich = False
-
-    def maybe_streak_pregame(self):
-        if PROB_STREAK_PREGAME > 0 and random.random() < PROB_STREAK_PREGAME:
-            log(f"🫣 {self.name} runs naked pregame! Security scrambles!")
-            time.sleep(0.4)
-            log(f"🛡️ Security escorts {self.name} away.")
 
     def streak_during_match_loop(self):
         stadium.match_start.wait()
@@ -242,38 +253,63 @@ class Fan(threading.Thread):
                         time.sleep(1.2)
                         if last_owner:
                             ball.set_owner(last_owner)
+                            log(f"⚽ Ball now with {last_owner}.")
                         log(f"🛡️ Security removed {self.name}. Play resumes.")
                         pause_event.set()
                     finally:
                         stoppage_lock.release()
 
     def run(self):
-        log(f"🚶 {self.name} heading to stadium.")
-        stadium.gates_open.wait()
-        log(f"🚪 {self.name} enters the stadium.")
+            log(f"🚶 {self.name} heading to stadium.")
+            stadium.gates_open.wait()
+            log(f"🚪 {self.name} enters the stadium.")
 
-        time.sleep(random.uniform(0.1, 0.6))
-        if random.random() < PROB_QUEUE_VISIT:
-            shop.enter_queue(self.name)
+            time.sleep(random.uniform(0.1, 0.6))
+            if random.random() < PROB_QUEUE_VISIT:
+                # random shop is picked from the union of food and merch shops
+                all_shops = food_shops + merch_shops
+                shop_obj = random.choice(all_shops)
+
+                shop_obj.enter_queue(self.name)
+                time.sleep(random.uniform(0.1, 0.5))
+                num_purchases = random.randint(2, 4) if self.is_rich else 1
+
+                # helper to find price from globals
+                def lookup_price(item):
+                    if item in SHOP_PRICES:
+                        return SHOP_PRICES[item]
+                    for shop_info in FOOD_SHOPS + MERCH_SHOPS:
+                        prices = shop_info.get("prices", {})
+                        if item in prices:
+                            return prices[item]
+                    return 0
+
+                for _ in range(num_purchases):
+                    if random.random() < PROB_BUY_SOMETHING and self.money > 0:
+                        items = list(shop_obj.stock.keys())
+                        if not items:
+                            break
+
+                        if self.is_rich:
+                            # weight choices by price (fallback to 1)
+                            weights = []
+                            for it in items:
+                                p = lookup_price(it) or 1
+                                weights.append(p)
+                            choice = random.choices(items, weights=weights, k=1)[0]
+                        else:
+                            choice = random.choice(items)
+
+                        price = lookup_price(choice)
+                        if shop_obj.buy(self, choice, price):
+                            time.sleep(random.uniform(0.1, 0.3))
+                        else:
+                            break
+                shop_obj.leave_queue(self.name)
+
             time.sleep(random.uniform(0.1, 0.5))
-            num_purchases = random.randint(2, 4) if self.is_rich else 1
-            for _ in range(num_purchases):
-                if random.random() < PROB_BUY_SOMETHING and self.money > 0:
-                    if self.is_rich:
-                        choice = random.choices(list(SHOP_STOCK.keys()), weights=[1, 1, 3])[0]
-                    else:
-                        choice = random.choice(list(SHOP_STOCK.keys()))
-                    price = SHOP_PRICES[choice]
-                    if shop.buy(self, choice, price):
-                        time.sleep(random.uniform(0.1, 0.3))
-                    else:
-                        break
-            shop.leave_queue(self.name)
 
-        time.sleep(random.uniform(0.1, 0.5))
-        self.maybe_streak_pregame()
-
-        self.streak_during_match_loop()
+            self.streak_during_match_loop()
 
 # ---------------------------
 # Player helpers
@@ -316,8 +352,9 @@ def choose_midfielder(team):
 def restart_after_goal(scoring_team):
     other = teamA if scoring_team.name == "B" else teamB
     mid = choose_midfielder(other)
-    ball.set_owner(mid)
     log(f"🔁 Kickoff: {other.name} restarts via {mid}.")
+    ball.set_owner(mid)
+    log(f"⚽ Ball now with {mid}.")
 
 # ---------------------------
 # Player Thread
@@ -342,8 +379,9 @@ class Player(threading.Thread):
         if not candidates:
             return None
         target = random.choice(candidates)
-        ball.set_owner(target)
         log(f"➡️  {self} passes to {target}.")
+        ball.set_owner(target)
+        log(f"⚽ Ball now with {target}.")
         return target
 
     def consider_shot(self):
@@ -360,14 +398,16 @@ class Player(threading.Thread):
                 if random.random() < min(max(modified_save_prob, 0.0), 1.0):
                     log(f"🧤 Shot by {self} ON TARGET! Saved by {gk}!")
                     ball.set_owner(gk)
+                    log(f"⚽ Ball now with {gk}.")
                 else:
                     with score_lock:
                         scoreboard[self.team.name] += 1
-                    log(f"🥅 GOAL! {self} scores!  Score: {scoreboard['A']} - {scoreboard['B']}")
+                    log(f"🥅 GOAL! {self} scores!  Score: {scoreboard['Barcelona']} - {scoreboard['Real Madrid']}")
                     restart_after_goal(self.team)
             else:
                 log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
                 ball.set_owner(gk)
+                log(f"⚽ Ball now with {gk}.")
             return True
         return False
 
@@ -397,7 +437,7 @@ class Player(threading.Thread):
     def handle_penalty(self, fouled_forward):
         stoppage_lock.acquire()
         try:
-            pause_event.clear()
+            pause_event.clear() #Event is paused when the threading event is not set.
             log("⏸️  Play paused for penalty setup.")
             time.sleep(0.8)
             shooting_team = fouled_forward.team
@@ -409,7 +449,7 @@ class Player(threading.Thread):
             if on_target and random.random() >= min(max(modified_save_prob, 0.0), 1.0):
                 with score_lock:
                     scoreboard[shooting_team.name] += 1
-                log(f"🥅 PENALTY GOAL by {fouled_forward}! Score: {scoreboard['A']} - {scoreboard['B']}")
+                log(f"🥅 PENALTY GOAL by {fouled_forward}! Score: {scoreboard['Barcelona']} - {scoreboard['Real Madrid']}")
                 restart_after_goal(shooting_team)
             else:
                 if on_target:
@@ -417,6 +457,7 @@ class Player(threading.Thread):
                 else:
                     log(f"🎯 Penalty by {fouled_forward} OFF target. {gk} restarts.")
                 ball.set_owner(gk)
+                log(f"⚽ Ball now with {gk}.")
             time.sleep(0.4)
             log("▶️  Play resumes after penalty.")
             pause_event.set()
@@ -434,8 +475,9 @@ class Player(threading.Thread):
             if got:
                 try:
                     if ball.get_owner() == owner and pause_event.is_set():
-                        ball.set_owner(self)
                         log(f"🧨 STEAL! {self} dispossesses {owner}.")
+                        ball.set_owner(self)
+                        log(f"⚽ Ball now with {self}.")
                 finally:
                     ball.mutex.release()
 
@@ -452,6 +494,7 @@ class Player(threading.Thread):
                 self.pass_ball()
         finally:
             ball.mutex.release()
+            
 
     def run(self):
         log(f"🚌 {self} arriving at stadium.")
@@ -463,7 +506,12 @@ class Player(threading.Thread):
         self.field_barrier.wait()
 
         stadium.anthem_start.wait()
-        for line in ANTHEM_LINES:
+        if self.team.name == "Barcelona":
+          for line in ANTHEM_LINES_BARCELONA:
+              log(f"🎶 {self} sings: {line}")
+              time.sleep(0.03)
+        else:
+          for line in ANTHEM_LINES_MADRID:
             log(f"🎶 {self} sings: {line}")
             time.sleep(0.03)
 
@@ -489,27 +537,17 @@ class Player(threading.Thread):
 def build_team(name, start_idx):
     team = Team(name)
     roles = [Role.GK] + [Role.DEF]*4 + [Role.MID]*4 + [Role.FWD]*2
-    random.shuffle(roles)
     for i in range(TEAM_SIZE):
         p_name = PLAYER_NAMES[start_idx + i]
         p = Player(team, p_name, roles[i], team.arrival_barrier, team.field_barrier)
         team.players.append(p)
-    gks = [p for p in team.players if p.role == Role.GK]
-    if len(gks) == 0:
-        team.players[0].role = Role.GK
-    elif len(gks) > 1:
-        for p in gks[1:]:
-            p.role = Role.DEF
     return team
 
-teamA = build_team("A", 0)
-teamB = build_team("B", TEAM_SIZE)
+teamA = build_team("Barcelona", 0)
+teamB = build_team("Real Madrid", TEAM_SIZE)
 
-# ---------------------------
-# Orchestration
-# ---------------------------
 
-class MatchOrchestrator:
+class MatchOrchestrator: #threads are started here, will basically work as our main() function.
     def __init__(self):
         self.clock = MatchClock(tick_event, end_event)
 
@@ -532,18 +570,16 @@ class MatchOrchestrator:
 
         time.sleep(0.8)
         kickoff_owner = random.choice(teamA.players + teamB.players)
-        ball.set_owner(kickoff_owner)
         log("🏟️ Match starts!")
+        ball.set_owner(kickoff_owner)
+        log(f"⚽ Ball now with {kickoff_owner}.")
         stadium.match_start.set()
 
         self.clock.start()
 
         end_event.wait()
         time.sleep(0.3)
-        log(f"🔚 Final score: A {scoreboard['A']} - {scoreboard['B']} B")
+        log(f"🔚 Final score: Barcelona {scoreboard['Barcelona']} - {scoreboard['Real Madrid']} Madrid")
 
-def main():
-    MatchOrchestrator().start()
 
-if __name__ == "__main__":
-    main()
+MatchOrchestrator().start()
