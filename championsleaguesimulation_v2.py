@@ -30,9 +30,9 @@ PROB_STEAL_MID_BY_MID = 0.15   #Probability of a successful steal by midfielder
 PROB_STEAL_DEF_BY_FWD = 0.20 #Probabilirt of a successful steal by forward.
 PROB_SHOT_FWD = 0.25              # FWD with ball chooses to shoot or pass
 PROB_SAVE_BY_GK = 0.55            # GK save chance if shot on target
-PROB_SHOT_ON_TARGET = 0.40
-PROB_QUEUE_VISIT = 0.75           # fan decides to enter a shop
-PROB_BUY_SOMETHING = 0.85  #fan decides to actually buy something
+PROB_SHOT_ON_TARGET = 0.65
+PROB_QUEUE_VISIT = 0.75           # fan decides to buy food (pre-match)
+PROB_BUY_SOMETHING = 0.85
 
 # Streakers
 PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan 
@@ -63,50 +63,30 @@ random.seed(7)
 
 # Lists of names (Barcelona and Real)
 PLAYER_NAMES = [
-    # Barcelona (Inverted order)
-    "Marc-André ter Stegen",
-    "Jules Koundé", "Pau Cubarsí", "Ronald Araújo", "Alejandro Balde",
-    "Frenkie de Jong", "Gavi", "Pedri",
-    "Raphinha", "Robert Lewandowski", "Lamine Yamal",
-    # Real Madrid (Inverted order) 
-    "Thibaut Courtois",
-    "Trent Alexander-Arnold", "Dani Carvajal", "Antonio Rüdiger", "Éder Militão",
-    "Aurélien Tchouaméni", "Federico Valverde", "Jude Bellingham",
-    "Rodrygo", "Vinícius Júnior", "Kylian Mbappé"
+    "Alex Johnson", "Jordan Lee", "Taylor Smith", "Casey Brown", "Morgan Davis",
+    "Riley Wilson", "Jamie Miller", "Avery Garcia", "Quinn Martinez", "Reese Hernandez",
+    "Charlie Robinson", "Dakota Clark", "Emerson Lewis", "Finley Walker", "Hayden Hall",
+    "Indigo Young", "Jesse King", "Kendall Scott", "Logan Green", "Micah Adams",
+    "Nico Baker", "Owen Carter", "Parker Edwards", "Quinn Flores", "Riley Gonzales"
+]
+
+FAN_NAMES = [
+    "Sam Patel", "Alex Kim", "Jordan Nguyen", "Taylor Chen", "Casey Wong",
+    "Morgan Liu", "Riley Zhang", "Jamie Li", "Avery Wang", "Quinn Xu",
+    "Reese Zhao", "Charlie Zhou", "Dakota Sun", "Emerson Tan", "Finley Lim",
+    "Hayden Wu", "Indigo Huang", "Jesse Liang", "Kendall Shen", "Logan Guo",
+    "Micah Hu", "Nico Wei", "Owen Yao", "Parker Zhu", "Quinn Jiang",
+    "Riley Cao", "Jamie Deng", "Avery Fang", "Quinn Gong", "Reese Han",
+    "Charlie Huo", "Dakota Jin", "Emerson Kang", "Finley Lei", "Hayden Mao",
+    "Indigo Nie", "Jesse Pan", "Kendall Qiao", "Logan Ren", "Micah Song",
+    "Nico Tang", "Owen Wen", "Parker Xie", "Quinn Yan", "Riley Zeng",
+    "Jamie Zhong", "Avery Bao", "Quinn Chai", "Reese Dong", "Charlie Feng"
 ]
 
 # ---------------------------
 # Anthem
 # ---------------------------
 
-ANTHEM_LINES_BARCELONA = [
-    "♪ Tot el camp és un clam,",
-    "♪ Som la gent blaugrana,",
-    "♪ Tant se val d’on venim,",
-    "♪ Si del sud o del nord,",
-    "♪ Ara estem d’acord, estem d’acord,",
-    "♪ Una bandera ens agermana."]
-
-ANTHEM_LINES_MADRID = [
-    "♪ Historia que tú hiciste,",
-    "♪ Historia por hacer,",
-    "♪ Porque nadie resiste,",
-    "♪ Tus ganas de vencer.",]
-
-FAN_NAMES = [
-    "Sergio Álvarez", "Alejandro Ruiz", "Jordi Navarro", "Tomás Ortega", "Carlos Vega",
-    "Marcos León", "Raúl Molina", "Diego Herrera", "Iván Castillo", "Luis Romero",
-    "Rubén Torres", "Javier Delgado", "Hugo Ramos", "Óscar Peña", "Pablo Lozano",
-    "Mario Iglesias", "Adrián Flores", "Miguel Duarte", "Andrés Cabrera", "David Serrano",
-    "Álvaro Morales", "Nicolás Herrera", "Gabriel Domínguez", "Pedro Vargas", "Lucas Fuentes",
-    "Martín Gutiérrez", "Daniel Bravo", "Manuel Calderón", "Francisco Pardo", "Cristian Rivas",
-    "Eduardo Campos", "Samuel Espinoza", "Antonio Méndez", "Enrique Pastor", "Joaquín Luna",
-    "Fernando Sanz", "Ricardo Cortés", "Julián Suárez", "Ramiro Ávila", "Héctor Gil",
-    "Víctor Salas", "Emilio Benítez", "Rodrigo Arias", "Esteban Cruz", "Adriano Nieto",
-    "Mateo Vargas", "Rafael Castillo", "Santiago Blanco", "Álex Navarro", "Ignacio Muñoz"
-]
-
-#Stadium class, essentially multiple event flags.
 class Stadium:
     def __init__(self):
         self.gates_open = threading.Event()
@@ -189,6 +169,18 @@ ball = Ball()
 score_lock = threading.Lock()
 scoreboard = {"Barcelona": 0, "Real Madrid": 0}
 
+# ---------------------------
+# Anthem
+# ---------------------------
+
+ANTHEM_LINES = [
+    "♪ The night is bright, the crowd ignites,",
+    "♪ Eleven hearts in blue and white,",
+    "♪ Eleven hearts in red and gold,",
+    "♪ The final’s tale is to be told!",
+]
+
+# ---------------------------
 # Clock
 
 class MatchClock(threading.Thread):
@@ -264,48 +256,23 @@ class Fan(threading.Thread):
             stadium.gates_open.wait()
             log(f"🚪 {self.name} enters the stadium.")
 
-            time.sleep(random.uniform(0.1, 0.6))
-            if random.random() < PROB_QUEUE_VISIT:
-                # random shop is picked from the union of food and merch shops
-                all_shops = food_shops + merch_shops
-                shop_obj = random.choice(all_shops)
-
-                shop_obj.enter_queue(self.name)
-                time.sleep(random.uniform(0.1, 0.5))
-                num_purchases = random.randint(2, 4) if self.is_rich else 1
-
-                # helper to find price from globals
-                def lookup_price(item):
-                    if item in SHOP_PRICES:
-                        return SHOP_PRICES[item]
-                    for shop_info in FOOD_SHOPS + MERCH_SHOPS:
-                        prices = shop_info.get("prices", {})
-                        if item in prices:
-                            return prices[item]
-                    return 0
-
-                for _ in range(num_purchases):
-                    if random.random() < PROB_BUY_SOMETHING and self.money > 0:
-                        items = list(shop_obj.stock.keys())
-                        if not items:
-                            break
-
-                        if self.is_rich:
-                            # weight choices by price (fallback to 1)
-                            weights = []
-                            for it in items:
-                                p = lookup_price(it) or 1
-                                weights.append(p)
-                            choice = random.choices(items, weights=weights, k=1)[0]
-                        else:
-                            choice = random.choice(items)
-
-                        price = lookup_price(choice)
-                        if shop_obj.buy(self, choice, price):
-                            time.sleep(random.uniform(0.1, 0.3))
-                        else:
-                            break
-                shop_obj.leave_queue(self.name)
+        time.sleep(random.uniform(0.1, 0.6))
+        if random.random() < PROB_QUEUE_VISIT:
+            shop.enter_queue(self.name)
+            time.sleep(random.uniform(0.1, 0.5))
+            num_purchases = random.randint(2, 4) if self.is_rich else 1
+            for _ in range(num_purchases):
+                if random.random() < PROB_BUY_SOMETHING and self.money > 0:
+                    if self.is_rich:
+                        choice = random.choices(list(SHOP_STOCK.keys()), weights=[1, 1, 3])[0]
+                    else:
+                        choice = random.choice(list(SHOP_STOCK.keys()))
+                    price = SHOP_PRICES[choice]
+                    if shop.buy(self, choice, price):
+                        time.sleep(random.uniform(0.1, 0.3))
+                    else:
+                        break
+            shop.leave_queue(self.name)
 
             time.sleep(random.uniform(0.1, 0.5))
 
@@ -582,4 +549,8 @@ class MatchOrchestrator: #threads are started here, will basically work as our m
         log(f"🔚 Final score: Barcelona {scoreboard['Barcelona']} - {scoreboard['Real Madrid']} Madrid")
 
 
-MatchOrchestrator().start()
+def main():
+    MatchOrchestrator().start()
+
+if __name__ == "__main__":
+    main()
