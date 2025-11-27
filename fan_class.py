@@ -9,7 +9,7 @@ class Fan(threading.Thread):
     
     def __init__(self, idx, stadium=None, end_event=None, pause_event=None, 
                  tick_event=None, ball=None, log=None, stoppage_lock=None,
-                 prob_streak_match=None, prob_queue_visit=None, prob_buy_something=None,
+                 prob_streak_match=None, prob_queue_visit=None, prob_buy_something=0.9,
                  food_shops=None, merch_shops=None, food_shops_data=None, 
                  merch_shops_data=None):
         super().__init__(daemon=True)

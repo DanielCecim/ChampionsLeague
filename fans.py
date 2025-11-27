@@ -1,7 +1,3 @@
-import threading
-import time
-import random
-
 FAN_NAMES = [
     "Sergio Álvarez", "Alejandro Ruiz", "Jordi Navarro", "Tomás Ortega", "Carlos Vega",
     "Marcos León", "Raúl Molina", "Diego Herrera", "Iván Castillo", "Luis Romero",
