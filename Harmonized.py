@@ -2,6 +2,18 @@ import threading
 import time
 import random
 from enum import Enum
+from players import (
+    PROB_FOUL_DEF, PROB_FOUL_MID, PROB_STEAL_DEF_BY_FWD,
+    PROB_STEAL_MID_BY_MID, PROB_STEAL_FWD_BY_DEF_OR_GK,
+    PROB_SHOT_FWD, PROB_SAVE_BY_GK, PROB_SHOT_ON_TARGET,
+    TEAM_BARCA_PLAYERS, TEAM_REAL_PLAYERS
+)
+from food_shops import (
+    PROB_BUY_SOMETHING, SHOP_QUEUE_MAX, CASHIERS, FOOD_SHOPS
+)
+from merch_shops import MERCH_SHOPS
+from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID)
+from fans import FAN_NAMES
 
 # Lock that allows only one thread to print at a time
 print_lock = threading.Lock() 
@@ -25,104 +37,14 @@ MATCH_TICKS = 18                  # 90 minutes total
 NUM_FANS = 50
 TEAM_SIZE = 11
 
-# Probabilities for various actions
-PROB_FOUL_DEF = "PROB_FOUL_DEF"
-PROB_FOUL_MID = "PROB_FOUL_MID"
-PROB_STEAL_DEF_BY_FWD = "PROB_STEAL_DEF_BY_FWD"
-PROB_STEAL_MID_BY_MID = "PROB_STEAL_MID_BY_MID"
-PROB_STEAL_FWD_BY_DEF_OR_GK = "PROB_STEAL_FWD_BY_DEF_OR_GK"
-PROB_SHOT_FWD = "PROB_SHOT_FWD"
-PROB_SAVE_BY_GK = "PROB_SAVE_BY_GK"
-PROB_SHOT_ON_TARGET = "PROB_SHOT_ON_TARGET"
-
 # Fan probabilities
 PROB_QUEUE_VISIT = 0.5 # Chance to visit a shop
-PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan 
-
-# Shop config
-PROB_BUY_SOMETHING = [0.5]
-SHOP_QUEUE_MAX = 12 # Max fans in queue
-CASHIERS = 2
-
-# Define stock and prices for food and merch shops
-FOOD_SHOPS = [
-  {"stock": {"hotdogs": 50, "burgers": 40, "fries": 100}, "prices": {"hotdogs": 6, "burgers": 8, "fries": 4}},
-  {"stock": {"pizza": 30, "sodas": 80, "water": 100}, "prices": {"pizza": 10, "sodas": 5, "water": 2}},
-  {"stock": {"nachos": 40, "popcorn": 60, "sodas": 70}, "prices": {"nachos": 7, "popcorn": 5, "sodas": 4}},
-  {"stock": {"sandwiches": 50, "coffee": 40, "tea": 30}, "prices": {"sandwiches": 6, "coffee": 3, "tea": 2}},
-  {"stock": {"churros": 60, "chocolate": 50, "water": 90}, "prices": {"churros": 5, "chocolate": 4, "water": 2}},
-]
-
-MERCH_SHOPS = [
-  {"stock": {"Barca scarves": 20, "Barca jerseys": 15}, "prices": {"Barca scarves": 15, "Barca jerseys": 80}},
-  {"stock": {"Barca hats": 25, "Barca flags": 10}, "prices": {"Barca hats": 10, "Barca flags": 12}},
-  {"stock": {"Real scarves": 30, "Real jerseys": 20}, "prices": {"Real scarves": 15, "Real jerseys": 85}},
-  {"stock": {"Real hats": 40, "Real flags": 15}, "prices": {"Real hats": 12, "Real flags": 10}},
-  {"stock": {"Real mugs": 25, "Real keychains": 50}, "prices": {"Real mugs": 8, "Real keychains": 5}},
-]
+PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan
 
 random.seed(7)
 
-# Lists of players
-PLAYER_NAMES = {
-    "Marc-André ter Stegen": {"pos": "GK", "probs": {PROB_SAVE_BY_GK: 0.60}},
-    # DEF
-    "Jules Koundé":          {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.23}},
-    "Ronald Araújo":         {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.27}},
-    "Andreas Christensen":   {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.22}},
-    "Alejandro Balde":       {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.21}},
-    # MID
-    "Frenkie de Jong":       {"pos": "MID", "probs": {PROB_STEAL_MID_BY_MID: 0.18}},
-    "Pedri":                 {"pos": "MID", "probs": {PROB_STEAL_MID_BY_MID: 0.17}},
-    "Ilkay Gündogan":        {"pos": "MID", "probs": {PROB_STEAL_MID_BY_MID: 0.16}},
-    # FWD
-    "Lamine Yamal":          {"pos": "FWD", "probs": {PROB_STEAL_DEF_BY_FWD: 0.30, PROB_SHOT_FWD: 0.50, PROB_SHOT_ON_TARGET: 0.60}},
-    "Robert Lewandowski":    {"pos": "FWD", "probs": {PROB_STEAL_DEF_BY_FWD: 0.30, PROB_SHOT_FWD: 0.50, PROB_SHOT_ON_TARGET: 0.60}},
-    "Raphinha":              {"pos": "FWD", "probs": {PROB_STEAL_DEF_BY_FWD: 0.27, PROB_SHOT_FWD: 0.34, PROB_SHOT_ON_TARGET: 0.56}},
-    "Thibaut Courtois":  {"pos": "GK",  "probs": {PROB_SAVE_BY_GK: 0.62}},
-    # DEF
-    "Dani Carvajal":     {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.22}},
-    "Antonio Rüdiger":   {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.24}},
-    "Éder Militão":      {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.25}},
-    "Ferland Mendy":     {"pos": "DEF", "probs": {PROB_STEAL_FWD_BY_DEF_OR_GK: 0.23}},
-    # MID
-    "Federico Valverde": {"pos": "MID", "probs": {PROB_STEAL_MID_BY_MID: 0.17}},
-    "Aurélien Tchouaméni":{"pos": "MID","probs": {PROB_STEAL_MID_BY_MID: 0.19}},
-    "Eduardo Camavinga": {"pos": "MID", "probs": {PROB_STEAL_MID_BY_MID: 0.18}},
-    "Jude Bellingham":   {"pos": "MID", "probs": {PROB_SHOT_FWD: 0.46, PROB_SHOT_ON_TARGET: 0.58}},
-    # FWD
-    "Vinícius Júnior":   {"pos": "FWD", "probs": {PROB_STEAL_DEF_BY_FWD: 0.29, PROB_SHOT_FWD: 0.48, PROB_SHOT_ON_TARGET: 0.58}},
-    "Rodrygo":           {"pos": "FWD", "probs": {PROB_STEAL_DEF_BY_FWD: 0.27, PROB_SHOT_FWD: 0.46, PROB_SHOT_ON_TARGET: 0.57}},
-}
-
-# Anthem
-
-ANTHEM_LINES_BARCELONA = [
-    "♪ Tot el camp és un clam,",
-    "♪ Som la gent blaugrana,",
-    "♪ Tant se val d’on venim,",
-    "♪ Si del sud o del nord,",
-    "♪ Ara estem d’acord, estem d’acord,",
-    "♪ Una bandera ens agermana."]
-
-ANTHEM_LINES_MADRID = [
-    "♪ Historia que tú hiciste,",
-    "♪ Historia por hacer,",
-    "♪ Porque nadie resiste,",
-    "♪ Tus ganas de vencer.",]
-
-FAN_NAMES = [
-    "Sergio Álvarez", "Alejandro Ruiz", "Jordi Navarro", "Tomás Ortega", "Carlos Vega",
-    "Marcos León", "Raúl Molina", "Diego Herrera", "Iván Castillo", "Luis Romero",
-    "Rubén Torres", "Javier Delgado", "Hugo Ramos", "Óscar Peña", "Pablo Lozano",
-    "Mario Iglesias", "Adrián Flores", "Miguel Duarte", "Andrés Cabrera", "David Serrano",
-    "Álvaro Morales", "Nicolás Herrera", "Gabriel Domínguez", "Pedro Vargas", "Lucas Fuentes",
-    "Martín Gutiérrez", "Daniel Bravo", "Manuel Calderón", "Francisco Pardo", "Cristian Rivas",
-    "Eduardo Campos", "Samuel Espinoza", "Antonio Méndez", "Enrique Pastor", "Joaquín Luna",
-    "Fernando Sanz", "Ricardo Cortés", "Julián Suárez", "Ramiro Ávila", "Héctor Gil",
-    "Víctor Salas", "Emilio Benítez", "Rodrigo Arias", "Esteban Cruz", "Adriano Nieto",
-    "Mateo Vargas", "Rafael Castillo", "Santiago Blanco", "Álex Navarro", "Ignacio Muñoz"
-]
+# Combine player dictionaries for team building
+PLAYER_NAMES = {**TEAM_BARCA_PLAYERS, **TEAM_REAL_PLAYERS}
 
 #Stadium class, essentially multiple event flags.
 class Stadium:
