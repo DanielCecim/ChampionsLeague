@@ -1,11 +1,7 @@
 import threading
 import time
 import random
-from enum import Enum
 from players import (
-    PROB_FOUL_DEF, PROB_FOUL_MID, PROB_STEAL_DEF_BY_FWD,
-    PROB_STEAL_MID_BY_MID, PROB_STEAL_FWD_BY_DEF_OR_GK,
-    PROB_SHOT_FWD, PROB_SAVE_BY_GK, PROB_SHOT_ON_TARGET,
     TEAM_BARCA_PLAYERS, TEAM_REAL_PLAYERS, TEAM_ATLETICO_PLAYERS, TEAM_PSG_PLAYERS
 )
 from food_shops import (
@@ -13,7 +9,8 @@ from food_shops import (
 )
 from merch_shops import MERCH_SHOPS
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
-from fans import FAN_NAMES
+from fan_class import Fan
+from player_class import Player, Role, choose_midfielder, restart_after_goal
 import sys
 import multiprocessing as mp
 
@@ -26,13 +23,6 @@ def log(msg):
     with print_lock:
         now = time.time() - t0
         print(f"[{now:6.2f}s] {msg}")
-
-# Roles as Enum. Mapping position to strings
-class Role(Enum):
-    GK = "GK"
-    DEF = "DEF"
-    MID = "MID"
-    FWD = "FWD"
 
 TICK_SECONDS = 5                  # 5 seconds = 5 minutes
 MATCH_TICKS = 18                  # 90 minutes total
@@ -127,7 +117,7 @@ class Ball:
 ball = Ball() # Our main ball object
 
 score_lock = threading.Lock() # Lock for score updates
-scoreboard = {"Barcelona": 0, "Real Madrid": 0} # Initial scores
+scoreboard = {} # Initial scores
 
 # Track current teams for the active match (set by orchestrator)
 current_teams = (None, None)
@@ -170,333 +160,6 @@ class MatchClock(threading.Thread): # Match clock thread that ticks every 5 seco
         log("⏱️ Match clock ends.")
         self.end_event.set()
 
-# Fans
-
-class Fan(threading.Thread):
-    def __init__(self, idx):
-        super().__init__(daemon=True) # Daemon thread that won't block program exit.
-        self.name = FAN_NAMES[idx]
-        #People have a random chance of having more money than others.
-        if random.random() < 0.2:
-            self.money = random.randint(300, 500) # Wealthy fans bring more money.
-            self.is_rich = True
-        else:
-            self.money = random.randint(100, 250) # Regular fans have less money.
-            self.is_rich = False
-
-    def streak_during_match_loop(self): # Fan may streak during match. Although very rare. Probability defined globally.
-        stadium.match_start.wait()
-        last_owner = None
-        while not end_event.is_set():
-            self_tick_seen = tick_event.wait(timeout=0.5)
-            if not self_tick_seen:
-                continue
-            if random.random() < PROB_STREAK_MATCH:
-                if stoppage_lock.acquire(blocking=False):
-                    try:
-                        if not pause_event.is_set():
-                            continue
-                        pause_event.clear()
-                        last_owner = ball.get_owner()
-                        log(f"🫣 {self.name} streaks onto the field! Players stop!")
-                        time.sleep(1.2)
-                        if last_owner:
-                            ball.set_owner(last_owner)
-                            log(f"⚽ Ball now with {last_owner}.")
-                        log(f"🛡️ Security removed {self.name}. Play resumes.")
-                        pause_event.set()
-                    finally:
-                        stoppage_lock.release()
-
-    def run(self): # Main fan loop. From entering stadium to shopping to streaking.
-            log(f"🚶 {self.name} heading to stadium.")
-            stadium.gates_open.wait()
-            log(f"🚪 {self.name} enters the stadium.")
-
-            time.sleep(random.uniform(0.1, 0.6))
-            if random.random() < PROB_QUEUE_VISIT:
-                # random shop is picked from the union of food and merch shops
-                all_shops = food_shops + merch_shops
-                shop_obj = random.choice(all_shops)
-
-                shop_obj.enter_queue(self.name)
-                time.sleep(random.uniform(0.1, 0.5))
-                num_purchases = random.randint(2, 4) if self.is_rich else 1
-
-                # helper to find price from globals
-                def lookup_price(item):
-                    for shop_info in FOOD_SHOPS + MERCH_SHOPS:
-                        prices = shop_info.get("prices", {})
-                        if item in prices:
-                            return prices[item]
-                    return 0
-
-                for _ in range(num_purchases):
-                    if random.random() < random.choice(PROB_BUY_SOMETHING) and self.money > 0: # Can only buy if they have money
-                        items = list(shop_obj.stock.keys())
-                        if not items: # no items to buy
-                            break
-
-                        if self.is_rich:
-                            # choosing items based on price weights for rich fans
-                            weights = []
-                            for i in items:
-                                p = lookup_price(i) or 1
-                                weights.append(p)
-                            choice = random.choices(items, weights=weights, k=1)[0]
-                        else:
-                            choice = random.choice(items)
-
-                        price = lookup_price(choice)
-                        if shop_obj.buy(self, choice, price):
-                            time.sleep(random.uniform(0.1, 0.3))
-                        else:
-                            break
-                shop_obj.leave_queue(self.name) # Fan leaves the queue
-
-            time.sleep(random.uniform(0.1, 0.5))
-
-            self.streak_during_match_loop() # Start streaking possibility during match
-
-# Player helpers
-
-def role_str(role: Role): # Convert role enum to string
-    return role.value
-
-def allowed_pass_targets(player): # Determine allowed pass targets based on player role
-    if player.role == Role.FWD:
-        return [Role.FWD, Role.MID]
-    if player.role == Role.MID:
-        return [Role.FWD, Role.MID, Role.DEF]
-    if player.role == Role.DEF:
-        return [Role.MID, Role.DEF, Role.GK]
-    if player.role == Role.GK:
-        return [Role.DEF, Role.MID, Role.FWD]
-    return []
-
-def can_steal(attacker, owner): # Determine if attacker can steal from owner and the probability
-    if owner is None or attacker.team.name == owner.team.name:
-        return False, 0.0
-    if owner.role == Role.FWD and attacker.role in (Role.DEF, Role.GK):
-        return True, attacker.data.get("probs", {}).get(PROB_STEAL_FWD_BY_DEF_OR_GK,0.0)
-    elif owner.role == Role.MID and attacker.role == Role.MID:
-        return True, attacker.data.get("probs",{}).get(PROB_STEAL_MID_BY_MID,0.0)
-    elif owner.role == Role.DEF and attacker.role == Role.FWD:
-        return True, attacker.data.get("probs", {}).get(PROB_STEAL_DEF_BY_FWD, 0.0)
-    return False, 0.0
-
-def choose_midfielder(team): # Choose a midfielder from the team for kickoff
-    mids = [p for p in team.players if p.role == Role.MID]
-    if mids:
-        return random.choice(mids)
-    non_gk = [p for p in team.players if p.role != Role.GK]
-    return random.choice(non_gk) if non_gk else team.players[0]
-
-def restart_after_goal(scoring_team): # Restart match after a goal
-    other = get_opponent(scoring_team)
-    if other is None:
-        return
-    mid = choose_midfielder(other)
-    log(f"🔁 Kickoff: {other.name} restarts via {mid}.")
-    ball.set_owner(mid)
-    log(f"⚽ Ball now with {mid}.")
-
-# Player Thread
-
-class Player(threading.Thread): # Player thread representing a soccer player
-    def __init__(self, team, name, role, team_arrival_barrier, field_barrier, data=None):
-        super().__init__(daemon=True) # Daemon thread that won't block program exit.
-        self.team = team # Team object
-        self.pname = name # Player name
-        self.role = role
-        self.team_arrival_barrier = team_arrival_barrier
-        self.field_barrier = field_barrier
-        self.data = data or {}
-
-        pos = self.data.get("pos", None)
-        if pos: # Override role if position provided
-              pos_upper = pos.upper()
-              if pos_upper == "GK":
-                  self.role = Role.GK
-              elif pos_upper == "DEF":
-                  self.role = Role.DEF
-              elif pos_upper == "MID":
-                  self.role = Role.MID
-              elif pos_upper in ("FWD", "ST", "FW"):
-                  self.role = Role.FWD
-              else:
-                  self.role = None
-        else:
-              self.role = None
-          # probabilities or special params per-player
-        self.probs = self.data.get("probs", {})
-
-    def __str__(self): # String representation of player
-        return f"{self.team.name}-{self.pname}({role_str(self.role)})"
-
-    def pass_ball(self): # Player attempts to pass the ball
-        roles = allowed_pass_targets(self) # Get allowed pass targets
-        candidates = [p for p in self.team.players if p != self and p.role in roles]
-        if not candidates:
-            return None
-        target = random.choice(candidates) # Randomly choose a target
-        log(f"➡️  {self} passes to {target}.")
-        ball.set_owner(target)
-        return target
-
-    def consider_shot(self): # Player considers taking a shot
-        if self.role != Role.FWD: # Only forwards take shots
-            return False
-        modified_shot_prob = self.probs[PROB_SHOT_FWD] # Get shot probability
-        if random.random() < modified_shot_prob: # Attempt shot
-            modified_on_target = self.probs[PROB_SHOT_ON_TARGET]
-            on_target = random.random() < modified_on_target # Determine if shot is on target
-            other_team = get_opponent(self.team)
-            if other_team is None:
-                return False
-            gk = [p for p in other_team.players if p.role == Role.GK][0] # Get opposing goalkeeper
-            modified_save_prob = gk.probs[PROB_SAVE_BY_GK]
-            if on_target: # Shot is on target
-                if random.random() < modified_save_prob:
-                    log(f"🧤 Shot by {self} ON TARGET! Saved by {gk}!")
-                    ball.set_owner(gk)
-                    log(f"⚽ Ball now with {gk}.")
-                else: # Goal scored
-                    with score_lock:
-                        scoreboard[self.team.name] += 1
-                        s_scoring = scoreboard.get(self.team.name, 0)
-                        opponent = get_opponent(self.team)
-                        s_opponent = scoreboard.get(opponent.name if opponent else "", 0)
-                    log(f"🥅 GOAL! {self} scores!  Score: {self.team.name} {s_scoring} - {s_opponent} {opponent.name if opponent else ''}")
-                    restart_after_goal(self.team)
-            else: # Shot is off target
-                log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
-                ball.set_owner(gk)
-            return True
-        return False
-
-    def attempt_foul_on_forward_owner(self): # Attempt to foul the forward who has the ball
-        if self.role not in (Role.DEF, Role.MID):
-            return
-        owner = ball.get_owner()
-        if owner is None or owner.team.name == self.team.name or owner.role != Role.FWD:
-            return
-        if not foul_lock.acquire(blocking=False):
-            return
-        committed = False
-        try:
-            owner_now = ball.get_owner()
-            if owner_now != owner or not pause_event.is_set():
-                return
-            base_p = self.probs.get(PROB_FOUL_DEF, 0.0) if self.role == Role.DEF else self.probs.get(PROB_FOUL_MID, 0.0)  # High skill lowers foul chance
-            if random.random() < base_p:
-                committed = True
-                log(f"🟨 {self} fouls {owner}! PENALTY to Team {owner.team.name}!")
-                self.handle_penalty(fouled_forward=owner)
-        finally:
-            if not committed:
-                foul_lock.release()
-
-    def handle_penalty(self, fouled_forward):
-        stoppage_lock.acquire() # Ensure only one stoppage at a time
-        try:
-            pause_event.clear() #Event is paused when the threading event is not set.
-            log("⏸️  Play paused for penalty setup.")
-            time.sleep(0.8)
-            shooting_team = fouled_forward.team
-            other_team = get_opponent(shooting_team)
-            if other_team is None:
-                return
-            gk = [p for p in other_team.players if p.role == Role.GK][0]
-            modified_on_target = self.probs[PROB_SHOT_ON_TARGET]
-            on_target = random.random() < min(max(modified_on_target, 0.0), 1.0)
-            modified_save_prob = self.probs[PROB_SAVE_BY_GK]
-            if on_target and random.random() >= modified_save_prob:
-                with score_lock:
-                    scoreboard[shooting_team.name] += 1
-                    s_scoring = scoreboard.get(shooting_team.name, 0)
-                    opponent = get_opponent(shooting_team)
-                    s_opponent = scoreboard.get(opponent.name if opponent else "", 0)
-                log(f"🥅 PENALTY GOAL by {fouled_forward}! Score: {shooting_team.name} {s_scoring} - {s_opponent} {opponent.name if opponent else ''}")
-                restart_after_goal(shooting_team)
-            else:
-                if on_target:
-                    log(f"🧤 Penalty by {fouled_forward} SAVED by {gk}!")
-                else:
-                    log(f"🎯 Penalty by {fouled_forward} OFF target. {gk} restarts.")
-                ball.set_owner(gk)
-                log(f"⚽ Ball now with {gk}.")
-            time.sleep(0.4)
-            log("▶️  Play resumes after penalty.")
-            pause_event.set()
-        finally:
-            stoppage_lock.release()
-            foul_lock.release()
-
-    def attempt_steal_window(self):
-        owner = ball.get_owner()
-        allowed, p = can_steal(self, owner)
-        if not allowed or not pause_event.is_set():
-            return
-        if random.random() < float(p or 0.0):
-            got = ball.mutex.acquire(timeout=0.01)
-            if got:
-                try:
-                    if ball.get_owner() == owner and pause_event.is_set():
-                        log(f"🧨 STEAL! {self} dispossesses {owner}.")
-                        ball.set_owner(self)
-                finally:
-                    ball.mutex.release()
-
-    def ball_handler_tick(self): # Handle ball possession on tick
-        if not pause_event.is_set():
-            return
-        got = ball.mutex.acquire(timeout=0.05)
-        if not got:
-            return
-        try:
-            if ball.get_owner() != self or not pause_event.is_set():
-                return
-            if not self.consider_shot():
-                self.pass_ball()
-        finally:
-            ball.mutex.release()
-            
-
-    def run(self): # Main player loop
-        log(f"🚌 {self} arriving at stadium.")
-        self.team_arrival_barrier.wait() # Wait for all team members to arrive
-        log(f"🧳 {self} heads to locker room.")
-        time.sleep(random.uniform(0.1, 0.4))
-
-        log(f"🚶 {self} walking to tunnel.")
-        self.field_barrier.wait()
-
-        stadium.anthem_start.wait()
-        if self.team.name == "Barcelona":
-          for line in ANTHEM_LINES_BARCELONA:
-              log(f"🎶 {self} sings: {line}")
-              time.sleep(0.03)
-        else:
-          for line in ANTHEM_LINES_MADRID:
-            log(f"🎶 {self} sings: {line}")
-            time.sleep(0.03)
-
-        stadium.match_start.wait()
-
-        while not end_event.is_set():
-            pause_event.wait()
-            tick_event.wait(timeout=0.2)
-            if end_event.is_set():
-                break
-            if ball.get_owner() == self:
-                self.ball_handler_tick() # 
-            else:
-                self.attempt_foul_on_forward_owner()
-                self.attempt_steal_window()
-
-        log(f"🏁 {self} done.")
-
 # Build Teams
 
 def build_team(name, players_dict):
@@ -505,7 +168,14 @@ def build_team(name, players_dict):
     player_names = list(players_dict.keys())
     for i in range(min(TEAM_SIZE, len(player_names))): # Create players from the provided dict
         p_name = player_names[i]
-        p = Player(team, p_name, roles[i], team.arrival_barrier, team.field_barrier, players_dict.get(p_name, {}))
+        # Player will be initialized with None for match resources - set later by orchestrator
+        p = Player(
+            team, p_name, roles[i], team.arrival_barrier, team.field_barrier, 
+            players_dict.get(p_name, {}),
+            stadium=None, end_event=None, pause_event=None, tick_event=None,
+            ball=None, log=None, anthems=None, scoreboard=None, score_lock=None,
+            stoppage_lock=None, foul_lock=None, get_opponent=None
+        )
         team.players.append(p)
     gks = [p for p in team.players if p.role == Role.GK]
     if len(gks) == 0: # Ensure at least one goalkeeper.
@@ -539,8 +209,52 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
         # Set current teams for helpers
         global current_teams
         current_teams = (self.team1, self.team2)
+        
+        # Prepare anthem mapping
+        anthem_map = {
+            "Barcelona": ANTHEM_LINES_BARCELONA,
+            "Real Madrid": ANTHEM_LINES_MADRID,
+            "Atletico Madrid": ANTHEM_LINES_ATLETICO,
+            "PSG": ANTHEM_LINES_PSG
+        }
+        
+        # Inject match resources into all players
+        for p in self.team1.players + self.team2.players:
+            p.stadium = stadium
+            p.end_event = end_event
+            p.pause_event = pause_event
+            p.tick_event = tick_event
+            p.ball = ball
+            p.log = log
+            p.anthems = anthem_map
+            p.scoreboard = scoreboard
+            p.score_lock = score_lock
+            p.stoppage_lock = stoppage_lock
+            p.foul_lock = foul_lock
+            p.get_opponent = get_opponent
 
-        fans = [Fan(i) for i in range(NUM_FANS)]
+        # Create fans with injected dependencies
+        fans = []
+        for i in range(NUM_FANS):
+            fan = Fan(
+                i, 
+                stadium=stadium, 
+                end_event=end_event, 
+                pause_event=pause_event,
+                tick_event=tick_event, 
+                ball=ball, 
+                log=log, 
+                stoppage_lock=stoppage_lock,
+                prob_streak_match=PROB_STREAK_MATCH, 
+                prob_queue_visit=PROB_QUEUE_VISIT,
+                prob_buy_something=PROB_BUY_SOMETHING,
+                food_shops=food_shops, 
+                merch_shops=merch_shops,
+                food_shops_data=FOOD_SHOPS, 
+                merch_shops_data=MERCH_SHOPS
+            )
+            fans.append(fan)
+
         for f in fans:
             f.start()
 
