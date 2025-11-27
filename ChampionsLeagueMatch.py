@@ -129,6 +129,15 @@ ball = Ball() # Our main ball object
 score_lock = threading.Lock() # Lock for score updates
 scoreboard = {"Barcelona": 0, "Real Madrid": 0} # Initial scores
 
+# Track current teams for the active match (set by orchestrator)
+current_teams = (None, None)
+
+def get_opponent(team):
+    t1, t2 = current_teams
+    if t1 is None or t2 is None:
+        return None
+    return t2 if team is t1 else t1
+
 # Clock
 
 class MatchClock(threading.Thread): # Match clock thread that ticks every 5 seconds to simulate 5 minutes.
@@ -284,7 +293,9 @@ def choose_midfielder(team): # Choose a midfielder from the team for kickoff
     return random.choice(non_gk) if non_gk else team.players[0]
 
 def restart_after_goal(scoring_team): # Restart match after a goal
-    other = teamA if scoring_team.name == "B" else teamB
+    other = get_opponent(scoring_team)
+    if other is None:
+        return
     mid = choose_midfielder(other)
     log(f"🔁 Kickoff: {other.name} restarts via {mid}.")
     ball.set_owner(mid)
@@ -340,7 +351,9 @@ class Player(threading.Thread): # Player thread representing a soccer player
         if random.random() < modified_shot_prob: # Attempt shot
             modified_on_target = self.probs[PROB_SHOT_ON_TARGET]
             on_target = random.random() < modified_on_target # Determine if shot is on target
-            other_team = teamA if self.team.name == "B" else teamB # Get opposing team
+            other_team = get_opponent(self.team)
+            if other_team is None:
+                return False
             gk = [p for p in other_team.players if p.role == Role.GK][0] # Get opposing goalkeeper
             modified_save_prob = gk.probs[PROB_SAVE_BY_GK]
             if on_target: # Shot is on target
@@ -351,7 +364,10 @@ class Player(threading.Thread): # Player thread representing a soccer player
                 else: # Goal scored
                     with score_lock:
                         scoreboard[self.team.name] += 1
-                    log(f"🥅 GOAL! {self} scores!  Score: {scoreboard['Barcelona']} - {scoreboard['Real Madrid']}")
+                        s_scoring = scoreboard.get(self.team.name, 0)
+                        opponent = get_opponent(self.team)
+                        s_opponent = scoreboard.get(opponent.name if opponent else "", 0)
+                    log(f"🥅 GOAL! {self} scores!  Score: {self.team.name} {s_scoring} - {s_opponent} {opponent.name if opponent else ''}")
                     restart_after_goal(self.team)
             else: # Shot is off target
                 log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
@@ -388,7 +404,9 @@ class Player(threading.Thread): # Player thread representing a soccer player
             log("⏸️  Play paused for penalty setup.")
             time.sleep(0.8)
             shooting_team = fouled_forward.team
-            other_team = teamA if shooting_team.name == "B" else teamB
+            other_team = get_opponent(shooting_team)
+            if other_team is None:
+                return
             gk = [p for p in other_team.players if p.role == Role.GK][0]
             modified_on_target = self.probs[PROB_SHOT_ON_TARGET]
             on_target = random.random() < min(max(modified_on_target, 0.0), 1.0)
@@ -396,7 +414,10 @@ class Player(threading.Thread): # Player thread representing a soccer player
             if on_target and random.random() >= modified_save_prob:
                 with score_lock:
                     scoreboard[shooting_team.name] += 1
-                log(f"🥅 PENALTY GOAL by {fouled_forward}! Score: {scoreboard['Barcelona']} - {scoreboard['Real Madrid']}")
+                    s_scoring = scoreboard.get(shooting_team.name, 0)
+                    opponent = get_opponent(shooting_team)
+                    s_opponent = scoreboard.get(opponent.name if opponent else "", 0)
+                log(f"🥅 PENALTY GOAL by {fouled_forward}! Score: {shooting_team.name} {s_scoring} - {s_opponent} {opponent.name if opponent else ''}")
                 restart_after_goal(shooting_team)
             else:
                 if on_target:
@@ -514,6 +535,10 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
 
     def start(self):
         log(f"CHAMPIONS LEAGUE MATCH: {self.team1.name} vs {self.team2.name}")
+
+        # Set current teams for helpers
+        global current_teams
+        current_teams = (self.team1, self.team2)
 
         fans = [Fan(i) for i in range(NUM_FANS)]
         for f in fans:
