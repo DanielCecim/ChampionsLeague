@@ -1,5 +1,5 @@
 # Shop config
-PROB_BUY_SOMETHING = [0.5]
+PROB_BUY_SOMETHING = [0.9]
 SHOP_QUEUE_MAX = 12 # Max fans in queue
 CASHIERS = 2
 
