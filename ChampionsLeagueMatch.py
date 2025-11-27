@@ -6,14 +6,16 @@ from players import (
     PROB_FOUL_DEF, PROB_FOUL_MID, PROB_STEAL_DEF_BY_FWD,
     PROB_STEAL_MID_BY_MID, PROB_STEAL_FWD_BY_DEF_OR_GK,
     PROB_SHOT_FWD, PROB_SAVE_BY_GK, PROB_SHOT_ON_TARGET,
-    TEAM_BARCA_PLAYERS, TEAM_REAL_PLAYERS
+    TEAM_BARCA_PLAYERS, TEAM_REAL_PLAYERS, TEAM_ATLETICO_PLAYERS, TEAM_PSG_PLAYERS
 )
 from food_shops import (
     PROB_BUY_SOMETHING, SHOP_QUEUE_MAX, CASHIERS, FOOD_SHOPS
 )
 from merch_shops import MERCH_SHOPS
-from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID)
+from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fans import FAN_NAMES
+import sys
+import multiprocessing as mp
 
 # Lock that allows only one thread to print at a time
 print_lock = threading.Lock() 
@@ -42,9 +44,6 @@ PROB_QUEUE_VISIT = 0.5 # Chance to visit a shop
 PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan
 
 random.seed(7)
-
-# Combine player dictionaries for team building
-PLAYER_NAMES = {**TEAM_BARCA_PLAYERS, **TEAM_REAL_PLAYERS}
 
 #Stadium class, essentially multiple event flags.
 class Stadium:
@@ -170,10 +169,10 @@ class Fan(threading.Thread):
         self.name = FAN_NAMES[idx]
         #People have a random chance of having more money than others.
         if random.random() < 0.2:
-            self.money = random.randint(50, 200) # Wealthy fans bring more money.
+            self.money = random.randint(300, 500) # Wealthy fans bring more money.
             self.is_rich = True
         else:
-            self.money = random.randint(5, 50) # Regular fans have less money.
+            self.money = random.randint(100, 250) # Regular fans have less money.
             self.is_rich = False
 
     def streak_during_match_loop(self): # Fan may streak during match. Although very rare. Probability defined globally.
@@ -497,41 +496,91 @@ def build_team(name, players_dict):
 
 teamA = build_team("Barcelona", TEAM_BARCA_PLAYERS) # Build Barcelona team from first 11 players
 teamB = build_team("Real Madrid", TEAM_REAL_PLAYERS) # Build Real Madrid team from next 11 players
+teamC = build_team("Atletico Madrid", TEAM_ATLETICO_PLAYERS) # Build Atletico Madrid team
+teamD = build_team("PSG", TEAM_PSG_PLAYERS) # Build PSG team
 
 
-class MatchOrchestrator: #threads are started here, will basically work as our main() function.
-    def __init__(self): # Initialize match clock
+class MatchOrchestrator:  # Threads are started here, acts like main()
+    def __init__(self, team1, team2):
+        self.team1 = team1
+        self.team2 = team2
         self.clock = MatchClock(tick_event, end_event)
 
-    def start(self): # Start the match orchestration
-        log("CHAMPIONS LEAGUE FINAL: Barcelona vs Real Madrid")
+        # Reset shared state for a fresh match with any two teams
+        with score_lock:
+            scoreboard.clear()
+            scoreboard[self.team1.name] = 0
+            scoreboard[self.team2.name] = 0
 
-        fans = [Fan(i) for i in range(NUM_FANS)] # Create fan threads
-        for f in fans: f.start()
+    def start(self):
+        log(f"CHAMPIONS LEAGUE MATCH: {self.team1.name} vs {self.team2.name}")
+
+        fans = [Fan(i) for i in range(NUM_FANS)]
+        for f in fans:
+            f.start()
 
         time.sleep(0.4)
         log("🔓 Stadium gates OPEN. Fans are crowding in.")
-        stadium.gates_open.set() # Open stadium gates
+        stadium.gates_open.set()
 
-        for p in teamA.players + teamB.players:
-            p.start() # Start player threads. Created in lines 575 and 576
+        # Start only the players from the selected teams
+        for p in self.team1.players + self.team2.players:
+            p.start()
 
         time.sleep(1.0)
         log("🎤 Anthem starts.")
-        stadium.anthem_start.set() # Start anthems
+        stadium.anthem_start.set()
 
         time.sleep(0.8)
-        kickoff_owner = random.choice(teamA.players + teamB.players)
+        kickoff_owner = random.choice(self.team1.players + self.team2.players)
         log("🏟️ Match starts!")
-        ball.set_owner(kickoff_owner) # Random player starts with the ball
+        ball.set_owner(kickoff_owner)
         log(f"⚽ Ball now with {kickoff_owner}.")
         stadium.match_start.set()
 
-        self.clock.start() # Start match clock
+        self.clock.start()
 
         end_event.wait()
         time.sleep(0.3)
-        log(f"🔚 Final score: Barcelona {scoreboard['Barcelona']} - {scoreboard['Real Madrid']} Madrid")
+        with score_lock:
+            s1 = scoreboard.get(self.team1.name, 0)
+            s2 = scoreboard.get(self.team2.name, 0)
+        log(f"🔚 Final score: {self.team1.name} {s1} - {s2} {self.team2.name}")
 
 
-MatchOrchestrator().start() # Main function call to start the match
+# Helper to reset global shared state for a fresh sequential match
+def reset_shared_state():
+    global stadium, tick_event, end_event, pause_event, stoppage_lock, foul_lock, ball
+    stadium = Stadium()
+    tick_event = threading.Event()
+    end_event = threading.Event()
+    pause_event = threading.Event()
+    pause_event.set()
+    stoppage_lock = threading.Lock()
+    foul_lock = threading.Lock()
+    ball = Ball()
+
+# Run one match in this process
+def run_single_match(team1, team2):
+    reset_shared_state()
+    MatchOrchestrator(team1, team2).start()
+
+# Allow sequential or concurrent (using processes) execution
+if __name__ == "__main__":
+
+    mode = "sequential"
+    if len(sys.argv) > 1:
+        mode = sys.argv[1].strip().lower()  # "sequential" or "concurrent"
+
+    if mode == "concurrent":
+        # Use processes so each match has isolated globals
+        p1 = mp.Process(target=run_single_match, args=(teamA, teamB))
+        p2 = mp.Process(target=run_single_match, args=(teamC, teamD))
+        p1.start()
+        p2.start()
+        p1.join()
+        p2.join()
+    else:
+        # Run one after the other in the same process
+        run_single_match(teamA, teamB)
+        run_single_match(teamC, teamD)
