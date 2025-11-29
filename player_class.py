@@ -40,11 +40,11 @@ def can_steal(attacker, owner):
     if owner is None or attacker.team.name == owner.team.name:
         return False, 0.0
     if owner.role == Role.FWD and attacker.role in (Role.DEF, Role.GK):
-        return True, attacker.data.get("probs", {}).get(PROB_STEAL_FWD_BY_DEF_OR_GK, 0.0)
+        return True, attacker.probs.get(PROB_STEAL_FWD_BY_DEF_OR_GK, 0.0)
     elif owner.role == Role.MID and attacker.role == Role.MID:
-        return True, attacker.data.get("probs", {}).get(PROB_STEAL_MID_BY_MID, 0.0)
+        return True, attacker.probs.get(PROB_STEAL_MID_BY_MID, 0.0)
     elif owner.role == Role.DEF and attacker.role == Role.FWD:
-        return True, attacker.data.get("probs", {}).get(PROB_STEAL_DEF_BY_FWD, 0.0)
+        return True, attacker.probs.get(PROB_STEAL_DEF_BY_FWD, 0.0)
     return False, 0.0
 
 def choose_midfielder(team):
@@ -112,7 +112,15 @@ class Player(threading.Thread):
         else:
             self.role = None
         
-        self.probs = self.data.get("probs", {})
+        # Copy probs to allow per-player fatigue modifications
+        self.probs = dict(self.data.get("probs", {}))
+        self.original_probs = dict(self.probs)  # Keep original values
+        self.fatigue_reduction = 0.001  # Amount to reduce per tick
+
+    def apply_fatigue(self):
+        """Reduce all player probabilities due to fatigue"""
+        for prob_key in self.probs:
+            self.probs[prob_key] = max(0.0, self.probs[prob_key] - self.fatigue_reduction)
 
     def __str__(self):
         """String representation of player"""
@@ -270,13 +278,21 @@ class Player(threading.Thread):
             self.log(f"🎶 {self} sings: {line}")
             time.sleep(0.03)
 
+        # Reset stats to original before match starts
+        self.probs = dict(self.original_probs)
+
         self.stadium.match_start.wait()
 
         while not self.end_event.is_set():
             self.pause_event.wait()
-            self.tick_event.wait(timeout=0.2)
+            tick_seen = self.tick_event.wait(timeout=0.2)
             if self.end_event.is_set():
                 break
+            
+            # Apply fatigue every tick (every 5 minutes)
+            if tick_seen:
+                self.apply_fatigue()
+            
             if self.ball.get_owner() == self:
                 self.ball_handler_tick()
             else:
