@@ -40,15 +40,67 @@ class Fan(threading.Thread):
         else:
             self.money = random.randint(100, 250)  # Regular fans have less money
             self.is_rich = False
+        
+        self.has_shopped = False  # Track if fan has already shopped
 
-    def streak_during_match_loop(self):
-        """Fan may streak during match. Although very rare. Probability defined globally."""
+    def shop_during_match(self):
+        """Fan shops periodically during the match."""
+        # Don't shop if already visited shops
+        if self.has_shopped:
+            return
+        
+        def lookup_price(item):
+            for shop_info in self.food_shops_data + self.merch_shops_data:
+                prices = shop_info.get("prices", {})
+                if item in prices:
+                    return prices[item]
+            return 0
+        
+        # Lower probability to visit shops during match (1%)
+        if random.random() < 0.01 and self.money > 0:
+            all_shops = self.food_shops + self.merch_shops
+            shop_obj = random.choice(all_shops)
+            
+            shop_obj.enter_queue(self.name)
+            time.sleep(random.uniform(0.1, 0.3))
+            
+            # Buy 1-2 items during match
+            num_purchases = random.randint(1, 2) if self.is_rich else 1
+            
+            for _ in range(num_purchases):
+                if random.random() < random.choice(self.prob_buy_something) and self.money > 0:
+                    items = list(shop_obj.stock.keys())
+                    if not items:
+                        break
+                    
+                    if self.is_rich:
+                        weights = [lookup_price(i) or 1 for i in items]
+                        choice = random.choices(items, weights=weights, k=1)[0]
+                    else:
+                        choice = random.choice(items)
+                    
+                    price = lookup_price(choice)
+                    if shop_obj.buy(self, choice, price):
+                        time.sleep(random.uniform(0.05, 0.15))
+                    else:
+                        break
+            shop_obj.leave_queue(self.name)
+            self.has_shopped = True  # Mark as shopped
+
+    def match_activities_loop(self):
+        """Fan may streak or shop during match."""
         self.stadium.match_start.wait()
         last_owner = None
+        tick_count = 0
+        
         while not self.end_event.is_set():
             self_tick_seen = self.tick_event.wait(timeout=0.5)
             if not self_tick_seen:
                 continue
+            
+            tick_count += 1
+            
+            # Check for streaking (very rare)
             if random.random() < self.prob_streak_match:
                 if self.stoppage_lock.acquire(blocking=False):
                     try:
@@ -65,6 +117,10 @@ class Fan(threading.Thread):
                         self.pause_event.set()
                     finally:
                         self.stoppage_lock.release()
+            
+            # Shop every few ticks (every ~15 minutes of game time)
+            if tick_count % 3 == 0:
+                self.shop_during_match()
 
     def run(self):
         """Main fan loop. From entering stadium to shopping to streaking."""
@@ -112,7 +168,9 @@ class Fan(threading.Thread):
                     else:
                         break
             shop_obj.leave_queue(self.name)  # Fan leaves the queue
+            self.has_shopped = True  # Mark as shopped
 
         time.sleep(random.uniform(0.1, 0.5))
 
-        self.streak_during_match_loop()  # Start streaking possibility during match
+        self.match_activities_loop()  # Shop and potentially streak during match
+

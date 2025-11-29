@@ -232,7 +232,7 @@ class Player(threading.Thread):
             if got:
                 try:
                     if self.ball.get_owner() == owner and self.pause_event.is_set():
-                        self.log(f"🧨 STEAL! {self} dispossesses {owner}.")
+                        self.log(f"🥷 STEAL! {self} dispossesses {owner}.")
                         self.ball.set_owner(self)
                 finally:
                     self.ball.mutex.release()

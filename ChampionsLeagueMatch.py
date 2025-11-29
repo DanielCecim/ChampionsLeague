@@ -26,7 +26,7 @@ def log(msg):
 
 TICK_SECONDS = 5                  # 5 seconds = 5 minutes
 MATCH_TICKS = 18                  # 90 minutes total
-NUM_FANS = 50
+NUM_FANS = 100
 TEAM_SIZE = 11
 
 # Fan probabilities
@@ -185,10 +185,18 @@ def build_team(name, players_dict):
             p.role = Role.DEF
     return team
 
-teamA = build_team("Barcelona", TEAM_BARCA_PLAYERS) # Build Barcelona team from first 11 players
-teamB = build_team("Real Madrid", TEAM_REAL_PLAYERS) # Build Real Madrid team from next 11 players
-teamC = build_team("Atletico Madrid", TEAM_ATLETICO_PLAYERS) # Build Atletico Madrid team
-teamD = build_team("PSG", TEAM_PSG_PLAYERS) # Build PSG team
+# Team builders - create fresh teams for each match to avoid thread reuse
+def create_team_barcelona():
+    return build_team("Barcelona", TEAM_BARCA_PLAYERS)
+
+def create_team_real_madrid():
+    return build_team("Real Madrid", TEAM_REAL_PLAYERS)
+
+def create_team_atletico():
+    return build_team("Atletico Madrid", TEAM_ATLETICO_PLAYERS)
+
+def create_team_psg():
+    return build_team("PSG", TEAM_PSG_PLAYERS)
 
 
 class MatchOrchestrator:  # Threads are started here, acts like main()
@@ -285,6 +293,17 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             s1 = scoreboard.get(self.team1.name, 0)
             s2 = scoreboard.get(self.team2.name, 0)
         log(f"🔚 Final score: {self.team1.name} {s1} - {s2} {self.team2.name}")
+        
+        # Return the winning team
+        if s1 > s2:
+            return self.team1
+        elif s2 > s1:
+            return self.team2
+        else:
+            # In case of tie, pick winner randomly
+            winner = random.choice([self.team1, self.team2])
+            log(f"🎲 Match tied! {winner.name} advances by coin toss.")
+            return winner
 
 
 # Helper to reset global shared state for a fresh sequential match
@@ -302,7 +321,8 @@ def reset_shared_state():
 # Run one match in this process
 def run_single_match(team1, team2):
     reset_shared_state()
-    MatchOrchestrator(team1, team2).start()
+    winner = MatchOrchestrator(team1, team2).start()
+    return winner
 
 # Allow sequential or concurrent (using processes) execution
 if __name__ == "__main__":
@@ -313,13 +333,46 @@ if __name__ == "__main__":
 
     if mode == "concurrent":
         # Use processes so each match has isolated globals
-        p1 = mp.Process(target=run_single_match, args=(teamA, teamB))
-        p2 = mp.Process(target=run_single_match, args=(teamC, teamD))
+        p1 = mp.Process(target=run_single_match, args=(create_team_barcelona(), create_team_real_madrid()))
+        p2 = mp.Process(target=run_single_match, args=(create_team_atletico(), create_team_psg()))
         p1.start()
         p2.start()
         p1.join()
         p2.join()
     else:
         # Run one after the other in the same process
-        run_single_match(teamA, teamB)
-        run_single_match(teamC, teamD)
+        log("🏆 === SEMI-FINAL 1 ===")
+        winner1 = run_single_match(create_team_barcelona(), create_team_real_madrid())
+        log(f"🎉 {winner1.name} advances to the FINAL!\n")
+        
+        time.sleep(1.0)
+        
+        log("🏆 === SEMI-FINAL 2 ===")
+        winner2 = run_single_match(create_team_atletico(), create_team_psg())
+        log(f"🎉 {winner2.name} advances to the FINAL!\n")
+        
+        time.sleep(2.0)
+        
+        log("🏆🏆🏆 === CHAMPIONS LEAGUE FINAL ===")
+        # Rebuild new threads with winning teams
+        if winner1.name == "Barcelona":
+            final_team1 = create_team_barcelona()
+        elif winner1.name == "Real Madrid":
+            final_team1 = create_team_real_madrid()
+        elif winner1.name == "Atletico Madrid":
+            final_team1 = create_team_atletico()
+        else:  # PSG
+            final_team1 = create_team_psg()
+        
+        if winner2.name == "Barcelona":
+            final_team2 = create_team_barcelona()
+        elif winner2.name == "Real Madrid":
+            final_team2 = create_team_real_madrid()
+        elif winner2.name == "Atletico Madrid":
+            final_team2 = create_team_atletico()
+        else:  # PSG
+            final_team2 = create_team_psg()
+        
+        champion = run_single_match(final_team1, final_team2)
+        log(f"\n🏆🏆🏆 {champion.name} are the CHAMPIONS LEAGUE WINNERS! 🏆🏆🏆")
+
