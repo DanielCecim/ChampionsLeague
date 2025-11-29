@@ -1,3 +1,5 @@
+import sys
+import multiprocessing as mp
 import threading
 import time
 import random
@@ -10,10 +12,9 @@ from food_shops import (
 from merch_shops import MERCH_SHOPS
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fan_class import Fan
-from player_class import Player, Role, choose_midfielder, restart_after_goal
+from player_class import Player, Role
 from data_collector import DataCollector
-import sys
-import multiprocessing as mp
+
 
 # Lock that allows only one thread to print at a time
 print_lock = threading.Lock() 
