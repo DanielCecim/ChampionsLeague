@@ -115,7 +115,7 @@ class Player(threading.Thread):
         # Copy probs to allow per-player fatigue modifications
         self.probs = dict(self.data.get("probs", {}))
         self.original_probs = dict(self.probs)  # Keep original values
-        self.fatigue_reduction = 0.001  # Amount to reduce per tick
+        self.fatigue_reduction = 0.01  # Amount to reduce per tick
         
         # Yellow card tracking
         self.yellow_cards = 0
