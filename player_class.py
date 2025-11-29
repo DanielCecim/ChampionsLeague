@@ -73,7 +73,7 @@ class Player(threading.Thread):
     def __init__(self, team, name, role, team_arrival_barrier, field_barrier, data=None,
                  stadium=None, end_event=None, pause_event=None, tick_event=None,
                  ball=None, log=None, anthems=None, scoreboard=None, score_lock=None,
-                 stoppage_lock=None, foul_lock=None, get_opponent=None):
+                 stoppage_lock=None, foul_lock=None, get_opponent=None, data_collector=None):
         super().__init__(daemon=True)
         self.team = team
         self.pname = name
@@ -95,6 +95,7 @@ class Player(threading.Thread):
         self.stoppage_lock = stoppage_lock
         self.foul_lock = foul_lock
         self.get_opponent = get_opponent
+        self.data_collector = data_collector
 
         pos = self.data.get("pos", None)
         if pos:
@@ -117,7 +118,7 @@ class Player(threading.Thread):
         self.original_probs = dict(self.probs)  # Keep original values
         self.fatigue_reduction = 0.01  # Amount to reduce per tick
         
-        # Yellow card tracking
+        # Yellow card tracking. 
         self.yellow_cards = 0
         self.is_expelled = False
 
@@ -141,6 +142,11 @@ class Player(threading.Thread):
         target = random.choice(candidates)
         self.log(f"➡️  {self} passes to {target}.")
         self.ball.set_owner(target)
+        
+        # Track pass
+        if self.data_collector:
+            self.data_collector.record_pass(self.pname, self.team.name)
+        
         return target
 
     def consider_shot(self):
@@ -163,6 +169,11 @@ class Player(threading.Thread):
                     self.log(f"🧤 Shot by {self} ON TARGET! Saved by {gk}!")
                     self.ball.set_owner(gk)
                     self.log(f"⚽ Ball now with {gk}.")
+                    
+                    # Track shot and save
+                    if self.data_collector:
+                        self.data_collector.record_shot(self.pname, self.team.name, on_target=True, goal=False)
+                        self.data_collector.record_save(gk.pname, gk.team.name)
                 else:
                     with self.score_lock:
                         self.scoreboard[self.team.name] += 1
@@ -170,10 +181,19 @@ class Player(threading.Thread):
                         opponent = self.get_opponent(self.team)
                         s_opponent = self.scoreboard.get(opponent.name if opponent else "", 0)
                     self.log(f"🥅 GOAL! {self} scores!  Score: {self.team.name} {s_scoring} - {s_opponent} {opponent.name if opponent else ''}")
+                    
+                    # Track shot and goal
+                    if self.data_collector:
+                        self.data_collector.record_shot(self.pname, self.team.name, on_target=True, goal=True)
+                    
                     restart_after_goal(self.team, self.ball, self.log, self.scoreboard, self.score_lock, self.get_opponent)
             else:
                 self.log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
                 self.ball.set_owner(gk)
+                
+                # Track missed shot
+                if self.data_collector:
+                    self.data_collector.record_shot(self.pname, self.team.name, on_target=False, goal=False)
             return True
         return False
 
@@ -197,11 +217,21 @@ class Player(threading.Thread):
             if random.random() < base_p:
                 committed = True
                 self.yellow_cards += 1
+                
+                # Track foul
+                if self.data_collector:
+                    self.data_collector.record_foul(self.pname, self.team.name)
+                    self.data_collector.record_yellow_card(self.pname, self.team.name)
+                
                 if self.yellow_cards >= 2:
                     self.is_expelled = True
                     self.log(f"🟥 {self} gets a SECOND YELLOW CARD and is EXPELLED!")
                     self.log(f"⚽ Ball awarded to {owner}. No penalty due to expulsion.")
                     self.ball.set_owner(owner)
+                    
+                    # Track expulsion
+                    if self.data_collector:
+                        self.data_collector.record_expulsion(self.pname, self.team.name)
                 else:
                     self.log(f"🟨 {self} fouls {owner}! YELLOW CARD! PENALTY to Team {owner.team.name}!")
                     self.handle_penalty(fouled_forward=owner)
@@ -231,12 +261,24 @@ class Player(threading.Thread):
                     opponent = self.get_opponent(shooting_team)
                     s_opponent = self.scoreboard.get(opponent.name if opponent else "", 0)
                 self.log(f"🥅 PENALTY GOAL by {fouled_forward}! Score: {shooting_team.name} {s_scoring} - {s_opponent} {opponent.name if opponent else ''}")
+                
+                # Track penalty goal
+                if self.data_collector:
+                    self.data_collector.record_shot(fouled_forward.pname, fouled_forward.team.name, on_target=True, goal=True)
+                
                 restart_after_goal(shooting_team, self.ball, self.log, self.scoreboard, self.score_lock, self.get_opponent)
             else:
                 if on_target:
                     self.log(f"🧤 Penalty by {fouled_forward} SAVED by {gk}!")
+                    # Track penalty save
+                    if self.data_collector:
+                        self.data_collector.record_shot(fouled_forward.pname, fouled_forward.team.name, on_target=True, goal=False)
+                        self.data_collector.record_save(gk.pname, gk.team.name)
                 else:
                     self.log(f"🎯 Penalty by {fouled_forward} OFF target. {gk} restarts.")
+                    # Track missed penalty
+                    if self.data_collector:
+                        self.data_collector.record_shot(fouled_forward.pname, fouled_forward.team.name, on_target=False, goal=False)
                 self.ball.set_owner(gk)
                 self.log(f"⚽ Ball now with {gk}.")
             time.sleep(0.4)
@@ -261,6 +303,10 @@ class Player(threading.Thread):
                     if self.ball.get_owner() == owner and self.pause_event.is_set():
                         self.log(f"🥷 STEAL! {self} dispossesses {owner}.")
                         self.ball.set_owner(self)
+                        
+                        # Track steal
+                        if self.data_collector:
+                            self.data_collector.record_steal(self.pname, self.team.name)
                 finally:
                     self.ball.mutex.release()
 
@@ -305,6 +351,10 @@ class Player(threading.Thread):
         self.is_expelled = False
 
         self.stadium.match_start.wait()
+        
+        # Initialize player stats in data collector
+        if self.data_collector:
+            self.data_collector.init_player(self.pname, self.team.name, role_str(self.role))
 
         while not self.end_event.is_set():
             self.pause_event.wait()
@@ -317,9 +367,17 @@ class Player(threading.Thread):
                 self.apply_fatigue()
             
             if self.ball.get_owner() == self:
+                # Track ball possession
+                if self.data_collector:
+                    self.data_collector.record_ball_possession(self.pname, self.team.name)
                 self.ball_handler_tick()
             else:
                 self.attempt_foul_on_forward_owner()
                 self.attempt_steal_window()
 
+        # Update final fatigue level
+        if self.data_collector:
+            total_fatigue = sum(self.original_probs.get(k, 0) - v for k, v in self.probs.items())
+            self.data_collector.update_player_fatigue(self.pname, self.team.name, total_fatigue)
+        
         self.log(f"🏁 {self} done.")

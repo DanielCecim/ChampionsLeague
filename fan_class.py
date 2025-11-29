@@ -11,7 +11,7 @@ class Fan(threading.Thread):
                  tick_event=None, ball=None, log=None, stoppage_lock=None,
                  prob_streak_match=None, prob_queue_visit=None, prob_buy_something=0.9,
                  food_shops=None, merch_shops=None, food_shops_data=None, 
-                 merch_shops_data=None):
+                 merch_shops_data=None, data_collector=None):
         super().__init__(daemon=True)
         self.name = FAN_NAMES[idx]
         
@@ -23,6 +23,7 @@ class Fan(threading.Thread):
         self.ball = ball
         self.log = log
         self.stoppage_lock = stoppage_lock
+        self.data_collector = data_collector
         
         # Probabilities and shop data
         self.prob_streak_match = prob_streak_match
@@ -41,6 +42,7 @@ class Fan(threading.Thread):
             self.money = random.randint(100, 250)  # Regular fans have less money
             self.is_rich = False
         
+        self.initial_money = self.money  # Track initial money
         self.has_shopped = False  # Track if fan has already shopped
 
     def shop_during_match(self):
@@ -61,7 +63,15 @@ class Fan(threading.Thread):
             all_shops = self.food_shops + self.merch_shops
             shop_obj = random.choice(all_shops)
             
+            # Determine shop type
+            shop_type = "food" if shop_obj in self.food_shops else "merch"
+            
             shop_obj.enter_queue(self.name)
+            
+            # Track shop visit
+            if self.data_collector:
+                self.data_collector.record_shop_visit(self.name)
+            
             time.sleep(random.uniform(0.1, 0.3))
             
             # Buy 1-2 items during match
@@ -81,6 +91,9 @@ class Fan(threading.Thread):
                     
                     price = lookup_price(choice)
                     if shop_obj.buy(self, choice, price):
+                        # Track purchase
+                        if self.data_collector:
+                            self.data_collector.record_purchase(self.name, choice, price, shop_type)
                         time.sleep(random.uniform(0.05, 0.15))
                     else:
                         break
@@ -109,6 +122,11 @@ class Fan(threading.Thread):
                         self.pause_event.clear()
                         last_owner = self.ball.get_owner()
                         self.log(f"🫣 {self.name} streaks onto the field! Players stop!")
+                        
+                        # Track streak
+                        if self.data_collector:
+                            self.data_collector.record_streak(self.name)
+                        
                         time.sleep(1.2)
                         if last_owner:
                             self.ball.set_owner(last_owner)
@@ -124,6 +142,10 @@ class Fan(threading.Thread):
 
     def run(self):
         """Main fan loop. From entering stadium to shopping to streaking."""
+        # Initialize fan stats in data collector
+        if self.data_collector:
+            self.data_collector.init_fan(self.name, self.initial_money, self.is_rich)
+        
         self.log(f"🚶 {self.name} heading to stadium.")
         self.stadium.gates_open.wait()
         self.log(f"🚪 {self.name} enters the stadium.")
@@ -133,8 +155,16 @@ class Fan(threading.Thread):
             # random shop is picked from the union of food and merch shops
             all_shops = self.food_shops + self.merch_shops
             shop_obj = random.choice(all_shops)
+            
+            # Determine shop type
+            shop_type = "food" if shop_obj in self.food_shops else "merch"
 
             shop_obj.enter_queue(self.name)
+            
+            # Track shop visit
+            if self.data_collector:
+                self.data_collector.record_shop_visit(self.name)
+            
             time.sleep(random.uniform(0.1, 0.5))
             num_purchases = random.randint(2, 4) if self.is_rich else 1
 
@@ -164,6 +194,9 @@ class Fan(threading.Thread):
 
                     price = lookup_price(choice)
                     if shop_obj.buy(self, choice, price):
+                        # Track purchase
+                        if self.data_collector:
+                            self.data_collector.record_purchase(self.name, choice, price, shop_type)
                         time.sleep(random.uniform(0.1, 0.3))
                     else:
                         break
@@ -173,4 +206,8 @@ class Fan(threading.Thread):
         time.sleep(random.uniform(0.1, 0.5))
 
         self.match_activities_loop()  # Shop and potentially streak during match
+        
+        # Update final money amount
+        if self.data_collector:
+            self.data_collector.update_fan_money(self.name, self.money)
 

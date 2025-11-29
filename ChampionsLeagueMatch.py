@@ -11,6 +11,7 @@ from merch_shops import MERCH_SHOPS
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fan_class import Fan
 from player_class import Player, Role, choose_midfielder, restart_after_goal
+from data_collector import DataCollector
 import sys
 import multiprocessing as mp
 
@@ -174,7 +175,7 @@ def build_team(name, players_dict):
             players_dict.get(p_name, {}),
             stadium=None, end_event=None, pause_event=None, tick_event=None,
             ball=None, log=None, anthems=None, scoreboard=None, score_lock=None,
-            stoppage_lock=None, foul_lock=None, get_opponent=None
+            stoppage_lock=None, foul_lock=None, get_opponent=None, data_collector=None
         )
         team.players.append(p)
     gks = [p for p in team.players if p.role == Role.GK]
@@ -200,10 +201,11 @@ def create_team_psg():
 
 
 class MatchOrchestrator:  # Threads are started here, acts like main()
-    def __init__(self, team1, team2):
+    def __init__(self, team1, team2, data_collector=None):
         self.team1 = team1
         self.team2 = team2
         self.clock = MatchClock(tick_event, end_event)
+        self.data_collector = data_collector
 
         # Reset shared state for a fresh match with any two teams
         with score_lock:
@@ -213,6 +215,11 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
 
     def start(self):
         log(f"CHAMPIONS LEAGUE MATCH: {self.team1.name} vs {self.team2.name}")
+        
+        # Start match tracking
+        if self.data_collector:
+            match_type = "final" if hasattr(self, 'is_final') else "semi-final"
+            self.data_collector.start_match(self.team1.name, self.team2.name, match_type)
 
         # Set current teams for helpers
         global current_teams
@@ -240,6 +247,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             p.stoppage_lock = stoppage_lock
             p.foul_lock = foul_lock
             p.get_opponent = get_opponent
+            p.data_collector = self.data_collector
 
         # Create fans with injected dependencies
         fans = []
@@ -259,7 +267,8 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
                 food_shops=food_shops, 
                 merch_shops=merch_shops,
                 food_shops_data=FOOD_SHOPS, 
-                merch_shops_data=MERCH_SHOPS
+                merch_shops_data=MERCH_SHOPS,
+                data_collector=self.data_collector
             )
             fans.append(fan)
 
@@ -294,6 +303,18 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             s2 = scoreboard.get(self.team2.name, 0)
         log(f"🔚 Final score: {self.team1.name} {s1} - {s2} {self.team2.name}")
         
+        # Save match statistics
+        if self.data_collector:
+            if s1 > s2:
+                winner = self.team1.name
+            elif s2 > s1:
+                winner = self.team2.name
+            else:
+                winner = "TIE"
+            
+            self.data_collector.end_match(s1, s2, winner)
+            self.data_collector.save_all_stats()
+        
         # Return the winning team
         if s1 > s2:
             return self.team1
@@ -319,9 +340,9 @@ def reset_shared_state():
     ball = Ball()
 
 # Run one match in this process
-def run_single_match(team1, team2):
+def run_single_match(team1, team2, data_collector=None):
     reset_shared_state()
-    winner = MatchOrchestrator(team1, team2).start()
+    winner = MatchOrchestrator(team1, team2, data_collector).start()
     return winner
 
 # Allow sequential or concurrent (using processes) execution
@@ -330,6 +351,9 @@ if __name__ == "__main__":
     mode = "sequential"
     if len(sys.argv) > 1:
         mode = sys.argv[1].strip().lower()  # "sequential" or "concurrent"
+
+    # Create data collector
+    data_collector = DataCollector()
 
     if mode == "concurrent":
         # Use processes so each match has isolated globals
@@ -342,13 +366,13 @@ if __name__ == "__main__":
     else:
         # Run one after the other in the same process
         log("🏆 === SEMI-FINAL 1 ===")
-        winner1 = run_single_match(create_team_barcelona(), create_team_real_madrid())
+        winner1 = run_single_match(create_team_barcelona(), create_team_real_madrid(), data_collector)
         log(f"🎉 {winner1.name} advances to the FINAL!\n")
         
         time.sleep(1.0)
         
         log("🏆 === SEMI-FINAL 2 ===")
-        winner2 = run_single_match(create_team_atletico(), create_team_psg())
+        winner2 = run_single_match(create_team_atletico(), create_team_psg(), data_collector)
         log(f"🎉 {winner2.name} advances to the FINAL!\n")
         
         time.sleep(2.0)
@@ -373,6 +397,12 @@ if __name__ == "__main__":
         else:  # PSG
             final_team2 = create_team_psg()
         
-        champion = run_single_match(final_team1, final_team2)
+        champion = run_single_match(final_team1, final_team2, data_collector)
         log(f"\n🏆🏆🏆 {champion.name} are the CHAMPIONS LEAGUE WINNERS! 🏆🏆🏆")
+        
+        # Generate visualizations
+        log("\n📊 Generating data visualizations...")
+        from visualizations import generate_all_visualizations
+        generate_all_visualizations(data_collector.db_path)
+        log("✅ Visualizations saved!")
 
