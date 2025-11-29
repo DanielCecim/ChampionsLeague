@@ -173,7 +173,7 @@ class Fan(threading.Thread):
 
                     if self.is_rich:
                         # choosing items based on price weights for rich fans
-                        weights = []
+                        weights = [] # Rich fans prefer expensive items
                         for i in items:
                             p = self.lookup_price(i) or 1
                             weights.append(p)
