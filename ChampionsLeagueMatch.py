@@ -353,7 +353,7 @@ if __name__ == "__main__":
         
         time.sleep(2.0)
         
-        log("🏆🏆🏆 === CHAMPIONS LEAGUE FINAL ===")
+        log("🏆🏆🏆 CHAMPIONS LEAGUE FINAL 🏆🏆🏆 ")
         # Rebuild new threads with winning teams
         if winner1.name == "Barcelona":
             final_team1 = create_team_barcelona()
