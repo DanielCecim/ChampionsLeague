@@ -116,6 +116,10 @@ class Player(threading.Thread):
         self.probs = dict(self.data.get("probs", {}))
         self.original_probs = dict(self.probs)  # Keep original values
         self.fatigue_reduction = 0.001  # Amount to reduce per tick
+        
+        # Yellow card tracking
+        self.yellow_cards = 0
+        self.is_expelled = False
 
     def apply_fatigue(self):
         """Reduce all player probabilities due to fatigue"""
@@ -128,8 +132,10 @@ class Player(threading.Thread):
 
     def pass_ball(self):
         """Player attempts to pass the ball"""
+        if self.is_expelled:  # Expelled players can't pass
+            return None
         roles = allowed_pass_targets(self)
-        candidates = [p for p in self.team.players if p != self and p.role in roles]
+        candidates = [p for p in self.team.players if p != self and p.role in roles and not p.is_expelled]
         if not candidates:
             return None
         target = random.choice(candidates)
@@ -139,6 +145,8 @@ class Player(threading.Thread):
 
     def consider_shot(self):
         """Player considers taking a shot"""
+        if self.is_expelled:  # Expelled players can't shoot
+            return False
         if self.role != Role.FWD:
             return False
         modified_shot_prob = self.probs.get(PROB_SHOT_FWD, 0.0)
@@ -173,6 +181,8 @@ class Player(threading.Thread):
         """Attempt to foul the forward who has the ball"""
         if self.role not in (Role.DEF, Role.MID):
             return
+        if self.is_expelled:  # Expelled players can't foul
+            return
         owner = self.ball.get_owner()
         if owner is None or owner.team.name == self.team.name or owner.role != Role.FWD:
             return
@@ -186,8 +196,15 @@ class Player(threading.Thread):
             base_p = self.probs.get(PROB_FOUL_DEF, 0.0) if self.role == Role.DEF else self.probs.get(PROB_FOUL_MID, 0.0)
             if random.random() < base_p:
                 committed = True
-                self.log(f"🟨 {self} fouls {owner}! PENALTY to Team {owner.team.name}!")
-                self.handle_penalty(fouled_forward=owner)
+                self.yellow_cards += 1
+                if self.yellow_cards >= 2:
+                    self.is_expelled = True
+                    self.log(f"🟥 {self} gets a SECOND YELLOW CARD and is EXPELLED!")
+                    self.log(f"⚽ Ball awarded to {owner}. No penalty due to expulsion.")
+                    self.ball.set_owner(owner)
+                else:
+                    self.log(f"🟨 {self} fouls {owner}! YELLOW CARD! PENALTY to Team {owner.team.name}!")
+                    self.handle_penalty(fouled_forward=owner)
         finally:
             if not committed:
                 self.foul_lock.release()
@@ -231,6 +248,8 @@ class Player(threading.Thread):
 
     def attempt_steal_window(self):
         """Attempt to steal the ball from opponent"""
+        if self.is_expelled:  # Expelled players can't steal
+            return
         owner = self.ball.get_owner()
         allowed, p = can_steal(self, owner)
         if not allowed or not self.pause_event.is_set():
@@ -247,6 +266,8 @@ class Player(threading.Thread):
 
     def ball_handler_tick(self):
         """Handle ball possession on tick"""
+        if self.is_expelled:  # Expelled players can't handle ball
+            return
         if not self.pause_event.is_set():
             return
         got = self.ball.mutex.acquire(timeout=0.05)
@@ -280,6 +301,8 @@ class Player(threading.Thread):
 
         # Reset stats to original before match starts
         self.probs = dict(self.original_probs)
+        self.yellow_cards = 0
+        self.is_expelled = False
 
         self.stadium.match_start.wait()
 
