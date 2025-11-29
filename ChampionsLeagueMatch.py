@@ -13,6 +13,7 @@ from merch_shops import MERCH_SHOPS
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fan_class import Fan
 from player_class import Player, Role
+from shop_class import food_shops, merch_shops, Shop
 from data_collector import DataCollector
 
 
@@ -54,41 +55,6 @@ pause_event.set() # initially set, match hasnt started
 stoppage_lock = threading.Lock()  #There are multiple events that can stop a match, streaks, penalties, faults, etc. Only one event can stop the clock at the time.
 foul_lock = threading.Lock()      # Only one faul can be happening at one time
 
-# Shop class
-
-class Shop:
-    def __init__(self, stock, queue_max, cashiers):
-        self.stock = dict(stock)
-        self.stock_lock = threading.Lock() # Lock for stock access
-        self.queue_slots = threading.Semaphore(queue_max)  # Max fans in queue. 
-        self.cashiers = threading.Semaphore(cashiers) # Number of cashiers
-
-    def enter_queue(self, fan_name): # Fan tries to enter queue
-        log(f"🧍 {fan_name} attempts to enter food queue.")
-        self.queue_slots.acquire()
-        log(f"🧍 {fan_name} entered the food queue.")
-
-    def leave_queue(self, fan_name): # Fan leaves queue
-        self.queue_slots.release()
-        log(f"🏃 {fan_name} leaves the food queue.")
-
-    def buy(self, fan, item, price): # Fan tries to buy an item
-        with self.cashiers: # Wait for a cashier availability
-            with self.stock_lock: # Lock stock access
-                if self.stock.get(item, 0) <= 0: # Check stock
-                    log(f"📦{fan.name} tried to buy {item}, but OUT OF STOCK.")
-                    return False
-                if fan.money < price: # Check if fan can afford
-                    log(f"💶{fan.name} cannot afford {item} (${price}).")
-                    return False
-                self.stock[item] -= 1 # Deduct stock
-                fan.money -= price # Deduct money
-                log(f"🧾 {fan.name} bought {item} for ${price}. Remaining ${fan.money}.")
-                return True
-
-# Create food and merch shops using list comprehension
-food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in FOOD_SHOPS]
-merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in MERCH_SHOPS]
 
 # Teams, Players, Ball
 

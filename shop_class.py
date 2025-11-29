@@ -1,5 +1,19 @@
-
 import threading
+from food_shops import FOOD_SHOPS
+from merch_shops import MERCH_SHOPS
+import time
+
+print_lock = threading.Lock() 
+t0 = time.time()
+
+def log(msg):
+    with print_lock:
+        now = time.time() - t0
+        print(f"[{now:6.2f}s] {msg}")
+
+SHOP_QUEUE_MAX = 12  # Max fans allowed in shop queue
+CASHIERS = 2            # Number of cashiers available
+
 class Shop:
     def __init__(self, stock, queue_max, cashiers):
         self.stock = dict(stock)
