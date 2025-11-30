@@ -381,9 +381,6 @@ if __name__ == "__main__":
         champion = run_single_match(final_team1, final_team2, data_collector, "Allianz Arena")
         log(f"\n🏆🏆🏆 {champion.name} are the CHAMPIONS LEAGUE WINNERS! 🏆🏆🏆")
         
-        # Generate visualizations
-        log("\n📊 Generating data visualizations...")
         from visualizations import generate_all_visualizations
         generate_all_visualizations(data_collector.db_path)
-        log("✅ Visualizations saved!")
 
