@@ -13,7 +13,7 @@ from merch_shops import MERCH_SHOPS
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fan_class import Fan
 from player_class import Player, Role
-from shop_class import food_shops, merch_shops, Shop
+from shop_class import Shop, create_shops_for_match
 from data_collector import DataCollector
 
 
@@ -168,11 +168,12 @@ def create_team_psg():
 
 
 class MatchOrchestrator:  # Threads are started here, acts like main()
-    def __init__(self, team1, team2, data_collector=None):
+    def __init__(self, team1, team2, data_collector=None, stadium_location="Bernabeu"):
         self.team1 = team1
         self.team2 = team2
         self.clock = MatchClock(tick_event, end_event)
         self.data_collector = data_collector
+        self.stadium_location = stadium_location
 
         # Reset shared state for a fresh match with any two teams
         with score_lock:
@@ -181,12 +182,25 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             scoreboard[self.team2.name] = 0
 
     def start(self):
+        log(f"🏟️  STADIUM: {self.stadium_location}")
         log(f"CHAMPIONS LEAGUE MATCH: {self.team1.name} vs {self.team2.name}")
+        
+        # Create location-specific shops
+        food_shops, merch_shops, food_data, merch_data = create_shops_for_match(
+            self.stadium_location, 
+            self.team1.name, 
+            self.team2.name
+        )
         
         # Start match tracking
         if self.data_collector:
             match_type = "final" if hasattr(self, 'is_final') else "semi-final"
-            self.data_collector.start_match(self.team1.name, self.team2.name, match_type)
+            self.data_collector.start_match(
+                self.team1.name, 
+                self.team2.name, 
+                match_type,
+                self.stadium_location
+            )
 
         # Set current teams for helpers
         global current_teams
@@ -233,8 +247,8 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
                 prob_buy_something=PROB_BUY_SOMETHING,
                 food_shops=food_shops, 
                 merch_shops=merch_shops,
-                food_shops_data=FOOD_SHOPS, 
-                merch_shops_data=MERCH_SHOPS,
+                food_shops_data=food_data, 
+                merch_shops_data=merch_data,
                 data_collector=self.data_collector
             )
             fans.append(fan)
@@ -307,9 +321,9 @@ def reset_shared_state():
     ball = Ball()
 
 # Run one match in this process
-def run_single_match(team1, team2, data_collector=None):
+def run_single_match(team1, team2, data_collector=None, stadium_location="Bernabeu"):
     reset_shared_state()
-    winner = MatchOrchestrator(team1, team2, data_collector).start()
+    winner = MatchOrchestrator(team1, team2, data_collector, stadium_location).start()
     return winner
 
 # Allow sequential or concurrent (using processes) execution
@@ -319,8 +333,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         mode = sys.argv[1].strip().lower()  # "sequential" or "concurrent"
 
-    # Create data collector
-    data_collector = DataCollector()
+    # Create data collector - clear existing data for fresh tournament
+    data_collector = DataCollector(clear_existing=True)
 
     if mode == "concurrent":
         # Use processes so each match has isolated globals
@@ -333,13 +347,13 @@ if __name__ == "__main__":
     else:
         # Run one after the other in the same process
         log("🏆 === SEMI-FINAL 1 ===")
-        winner1 = run_single_match(create_team_barcelona(), create_team_real_madrid(), data_collector)
+        winner1 = run_single_match(create_team_barcelona(), create_team_real_madrid(), data_collector, "Camp Nou")
         log(f"🎉 {winner1.name} advances to the FINAL!\n")
         
         time.sleep(1.0)
         
         log("🏆 === SEMI-FINAL 2 ===")
-        winner2 = run_single_match(create_team_atletico(), create_team_psg(), data_collector)
+        winner2 = run_single_match(create_team_atletico(), create_team_psg(), data_collector, "Bernabeu")
         log(f"🎉 {winner2.name} advances to the FINAL!\n")
         
         time.sleep(2.0)
@@ -364,7 +378,7 @@ if __name__ == "__main__":
         else:  # PSG
             final_team2 = create_team_psg()
         
-        champion = run_single_match(final_team1, final_team2, data_collector)
+        champion = run_single_match(final_team1, final_team2, data_collector, "Allianz Arena")
         log(f"\n🏆🏆🏆 {champion.name} are the CHAMPIONS LEAGUE WINNERS! 🏆🏆🏆")
         
         # Generate visualizations

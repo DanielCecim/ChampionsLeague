@@ -14,7 +14,7 @@ def display_matches(db_path):
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT match_id, team1, team2, score_team1, score_team2, winner, match_type
+        SELECT match_id, team1, team2, score_team1, score_team2, winner, match_type, stadium_location
         FROM matches
         ORDER BY match_id
     """)
@@ -22,7 +22,7 @@ def display_matches(db_path):
     data = cursor.fetchall()
     conn.close()
     
-    headers = ["ID", "Team 1", "Team 2", "Score 1", "Score 2", "Winner", "Type"]
+    headers = ["ID", "Team 1", "Team 2", "Score 1", "Score 2", "Winner", "Type", "Stadium"]
     print("\n=== MATCHES ===")
     print(tabulate(data, headers=headers, tablefmt="grid"))
 

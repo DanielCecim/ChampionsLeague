@@ -1,6 +1,6 @@
 import threading
-from food_shops import FOOD_SHOPS
-from merch_shops import MERCH_SHOPS
+from food_shops import SPANISH_FOOD_SHOPS, GERMAN_FOOD_SHOPS
+from merch_shops import BARCA_REAL_MERCH, ATLETICO_PSG_MERCH, get_finals_merch
 import time
 
 print_lock = threading.Lock() 
@@ -44,6 +44,32 @@ class Shop:
                 log(f"🧾 {fan.name} bought {item} for ${price}. Remaining ${fan.money}.")
                 return True
 
-# Create food and merch shops using list comprehension
-food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in FOOD_SHOPS]
-merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in MERCH_SHOPS]
+def create_shops_for_match(stadium_location, team1_name=None, team2_name=None):
+    """Create appropriate food and merch shops based on stadium location and teams"""
+    if stadium_location == "Allianz Arena":
+        food_data = GERMAN_FOOD_SHOPS
+    else:  # Bernabeu or Camp Nou
+        food_data = SPANISH_FOOD_SHOPS
+    
+    # Determine merch based on teams
+    if team1_name and team2_name:
+        # Finals - dynamic based on finalists
+        if stadium_location == "Allianz Arena":
+            merch_data = get_finals_merch(team1_name, team2_name)
+        # Semi-final 1: Barcelona vs Real Madrid
+        elif "Barcelona" in [team1_name, team2_name] and "Real Madrid" in [team1_name, team2_name]:
+            merch_data = BARCA_REAL_MERCH
+        # Semi-final 2: Atletico vs PSG
+        else:
+            merch_data = ATLETICO_PSG_MERCH
+    else:
+        merch_data = BARCA_REAL_MERCH  # Default
+    
+    food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in food_data]
+    merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in merch_data]
+    
+    return food_shops, merch_shops, food_data, merch_data
+
+# Default shops for backward compatibility
+food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in SPANISH_FOOD_SHOPS]
+merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in BARCA_REAL_MERCH]

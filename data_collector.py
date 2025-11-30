@@ -1,20 +1,19 @@
-"""
-Data Collector Module
-Tracks and stores player and fan statistics during Champions League matches
-"""
-
 import sqlite3
 import threading
 from datetime import datetime
 
+# This DataCollector object will be used to collect and store match statistics
 
-class DataCollector:
+class DataCollector: # We create the data collector object in the main file
     """Thread-safe data collector for match statistics"""
     
-    def __init__(self, db_path="champions_league_data.db"):
+    def __init__(self, db_path="champions_league_data.db", clear_existing=False):
         self.db_path = db_path
         self.lock = threading.Lock()
         self.init_database()
+        
+        if clear_existing:
+            self.clear_all_data()
         
         # In-memory caches for current match
         self.player_stats = {}
@@ -37,9 +36,19 @@ class DataCollector:
                 score_team2 INTEGER DEFAULT 0,
                 winner TEXT,
                 match_type TEXT,
+                stadium_location TEXT,
                 match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        # Migrate existing database: add stadium_location column if it doesn't exist
+        try:
+            cursor.execute("SELECT stadium_location FROM matches LIMIT 1")
+        except sqlite3.OperationalError:
+            # Column doesn't exist, add it
+            cursor.execute("ALTER TABLE matches ADD COLUMN stadium_location TEXT DEFAULT 'Unknown'")
+            conn.commit()
+            print("📊 Database updated: Added stadium_location column to matches table")
         
         # Player statistics table
         cursor.execute("""
@@ -98,15 +107,36 @@ class DataCollector:
         conn.commit()
         conn.close()
     
-    def start_match(self, team1, team2, match_type="regular"):
+    def clear_all_data(self):
+        """Clear all existing data from the database (for fresh tournament start)"""
+        with self.lock:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("DELETE FROM purchases")
+            cursor.execute("DELETE FROM fan_stats")
+            cursor.execute("DELETE FROM player_stats")
+            cursor.execute("DELETE FROM matches")
+            
+            # Reset auto-increment counters
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='matches'")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='player_stats'")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='fan_stats'")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='purchases'")
+            
+            conn.commit()
+            conn.close()
+            print("🗑️  Cleared previous tournament data")
+    
+    def start_match(self, team1, team2, match_type="regular", stadium_location="Unknown"):
         """Start tracking a new match"""
         with self.lock:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO matches (team1, team2, match_type)
-                VALUES (?, ?, ?)
-            """, (team1, team2, match_type))
+                INSERT INTO matches (team1, team2, match_type, stadium_location)
+                VALUES (?, ?, ?, ?)
+            """, (team1, team2, match_type, stadium_location))
             self.match_id = cursor.lastrowid
             conn.commit()
             conn.close()
