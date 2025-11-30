@@ -7,9 +7,8 @@ from players import (
     TEAM_BARCA_PLAYERS, TEAM_REAL_PLAYERS, TEAM_ATLETICO_PLAYERS, TEAM_PSG_PLAYERS
 )
 from food_shops import (
-    PROB_BUY_SOMETHING, SHOP_QUEUE_MAX, CASHIERS, FOOD_SHOPS
+    PROB_BUY_SOMETHING
 )
-from merch_shops import MERCH_SHOPS
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fan_class import Fan
 from player_class import Player, Role
