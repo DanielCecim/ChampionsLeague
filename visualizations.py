@@ -501,7 +501,7 @@ def generate_fan_purchases_by_item_chart_per_match(db_path, match_id, match_labe
         return
     
     items = [row[0] for row in data]
-    counts = [row[1] for row in data]
+    counts = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
     
     plt.figure(figsize=(14, 6))
     bars = plt.bar(items, counts, color='#00897B')
@@ -514,7 +514,7 @@ def generate_fan_purchases_by_item_chart_per_match(db_path, match_id, match_labe
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(height)}',
+                f'{int(height):,}',
                 ha='center', va='bottom', fontweight='bold', fontsize=9)
     
     filename = f"{output_dir}/match_{match_id}_popular_items.png"
@@ -546,7 +546,7 @@ def generate_fan_purchases_by_item_chart(db_path, output_dir="charts"):
         return
     
     items = [row[0] for row in data]
-    counts = [row[1] for row in data]
+    counts = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
     
     plt.figure(figsize=(14, 6))
     bars = plt.bar(items, counts, color='#00897B')
@@ -559,7 +559,7 @@ def generate_fan_purchases_by_item_chart(db_path, output_dir="charts"):
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(height)}',
+                f'{int(height):,}',
                 ha='center', va='bottom', fontweight='bold', fontsize=9)
     
     plt.savefig(f"{output_dir}/tournament_most_popular_items.png", dpi=300, bbox_inches='tight')
