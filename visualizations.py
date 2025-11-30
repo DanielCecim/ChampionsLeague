@@ -118,7 +118,6 @@ def generate_player_goals_chart(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_top_goal_scorers.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_top_goal_scorers.png")
 
 
 def generate_player_passes_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
@@ -162,7 +161,6 @@ def generate_player_passes_chart_per_match(db_path, match_id, match_label, outpu
     filename = f"{output_dir}/match_{match_id}_top_passers.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 
@@ -252,7 +250,6 @@ def generate_player_steals_chart_per_match(db_path, match_id, match_label, outpu
     filename = f"{output_dir}/match_{match_id}_top_steals.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 
@@ -298,7 +295,6 @@ def generate_player_steals_chart(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_top_steal_winners.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_top_steal_winners.png")
 
 
 def generate_yellow_cards_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
@@ -345,7 +341,6 @@ def generate_yellow_cards_chart_per_match(db_path, match_id, match_label, output
     filename = f"{output_dir}/match_{match_id}_disciplinary.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 
@@ -394,7 +389,7 @@ def generate_yellow_cards_chart(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_disciplinary_record.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_disciplinary_record.png")
+
 
 
 def generate_goalkeeper_saves_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
@@ -437,7 +432,6 @@ def generate_goalkeeper_saves_chart_per_match(db_path, match_id, match_label, ou
     filename = f"{output_dir}/match_{match_id}_goalkeeper_saves.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 
@@ -482,97 +476,6 @@ def generate_goalkeeper_saves_chart(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_goalkeeper_saves.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_goalkeeper_saves.png")
-
-
-def generate_fan_spending_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of top fan spenders for a specific match"""
-    Path(output_dir).mkdir(exist_ok=True)
-    
-    conn = get_database_connection(db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT fan_name, total_spent
-        FROM fan_stats
-        WHERE match_id = ? AND total_spent > 0
-        ORDER BY total_spent DESC
-        LIMIT 10
-    """, (match_id,))
-    
-    data = cursor.fetchall()
-    conn.close()
-    
-    if not data:
-        return
-    
-    fans = [row[0] for row in data]
-    spending = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
-    
-    plt.figure(figsize=(12, 6))
-    bars = plt.bar(fans, spending, color='#F57C00')
-    plt.xlabel('Fan', fontsize=12, fontweight='bold')
-    plt.ylabel('Total Spending ($)', fontsize=12, fontweight='bold')
-    plt.title(f'Top Fan Spenders - {match_label}', fontsize=14, fontweight='bold')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    
-    for bar in bars:
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'${height:,.0f}',
-                ha='center', va='bottom', fontweight='bold')
-    
-    filename = f"{output_dir}/match_{match_id}_top_spenders.png"
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"✓ Saved: {filename}")
-
-
-
-def generate_fan_spending_chart(db_path, output_dir="charts"):
-    """Generate bar chart of top fan spenders across ALL matches"""
-    Path(output_dir).mkdir(exist_ok=True)
-    
-    conn = get_database_connection(db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT fan_name, SUM(total_spent) as total_spending
-        FROM fan_stats
-        WHERE total_spent > 0
-        GROUP BY fan_name
-        ORDER BY total_spending DESC
-        LIMIT 10
-    """)
-    
-    data = cursor.fetchall()
-    conn.close()
-    
-    if not data:
-        print("No fan spending data available")
-        return
-    
-    fans = [row[0] for row in data]
-    spending = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
-    
-    plt.figure(figsize=(12, 6))
-    bars = plt.bar(fans, spending, color='#F57C00')
-    plt.xlabel('Fan', fontsize=12, fontweight='bold')
-    plt.ylabel('Total Spending ($)', fontsize=12, fontweight='bold')
-    plt.title('Top Fan Spenders - Tournament Overall', fontsize=14, fontweight='bold')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    
-    for bar in bars:
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'${height:,.0f}',
-                ha='center', va='bottom', fontweight='bold')
-    
-    plt.savefig(f"{output_dir}/tournament_top_fan_spenders.png", dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_top_fan_spenders.png")
 
 
 def generate_fan_purchases_by_item_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
@@ -617,7 +520,6 @@ def generate_fan_purchases_by_item_chart_per_match(db_path, match_id, match_labe
     filename = f"{output_dir}/match_{match_id}_popular_items.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 
@@ -662,7 +564,6 @@ def generate_fan_purchases_by_item_chart(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_most_popular_items.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_most_popular_items.png")
 
 
 def generate_shop_revenue_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
@@ -705,7 +606,6 @@ def generate_shop_revenue_chart_per_match(db_path, match_id, match_label, output
     filename = f"{output_dir}/match_{match_id}_shop_revenue.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 
@@ -748,7 +648,6 @@ def generate_shop_revenue_chart(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_shop_revenue.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_shop_revenue.png")
 
 
 def generate_team_statistics_comparison_per_match(db_path, match_id, match_label, output_dir="charts"):
@@ -802,7 +701,6 @@ def generate_team_statistics_comparison_per_match(db_path, match_id, match_label
     filename = f"{output_dir}/match_{match_id}_team_stats.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 
@@ -856,7 +754,6 @@ def generate_team_statistics_comparison(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_team_statistics.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_team_statistics.png")
 
 
 def generate_match_summary_card(db_path, match_id, match_label, output_dir="charts"):
@@ -917,7 +814,6 @@ def generate_match_summary_card(db_path, match_id, match_label, output_dir="char
     filename = f"{output_dir}/match_{match_id}_summary.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 def generate_all_match_visualizations(db_path, match_id, match_label, output_dir="charts"):
@@ -930,7 +826,6 @@ def generate_all_match_visualizations(db_path, match_id, match_label, output_dir
     generate_player_steals_chart_per_match(db_path, match_id, match_label, output_dir)
     generate_yellow_cards_chart_per_match(db_path, match_id, match_label, output_dir)
     generate_goalkeeper_saves_chart_per_match(db_path, match_id, match_label, output_dir)
-    generate_fan_spending_chart_per_match(db_path, match_id, match_label, output_dir)
     generate_fan_purchases_by_item_chart_per_match(db_path, match_id, match_label, output_dir)
     generate_shop_revenue_chart_per_match(db_path, match_id, match_label, output_dir)
     generate_team_statistics_comparison_per_match(db_path, match_id, match_label, output_dir)
@@ -964,14 +859,9 @@ def generate_all_visualizations(db_path, output_dir="charts"):
     generate_player_steals_chart(db_path, output_dir)
     generate_yellow_cards_chart(db_path, output_dir)
     generate_goalkeeper_saves_chart(db_path, output_dir)
-    generate_fan_spending_chart(db_path, output_dir)
     generate_fan_purchases_by_item_chart(db_path, output_dir)
     generate_shop_revenue_chart(db_path, output_dir)
     generate_team_statistics_comparison(db_path, output_dir)
-    
-    print(f"\n✅ All visualizations saved to '{output_dir}/' directory")
-    print(f"   - Generated {len(matches)} match-specific visualization sets")
-    print(f"   - Generated tournament overall statistics")
 
 
 if __name__ == "__main__":
