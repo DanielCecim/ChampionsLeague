@@ -15,20 +15,21 @@ SHOP_QUEUE_MAX = 12  # Max fans allowed in shop queue
 CASHIERS = 2            # Number of cashiers available
 
 class Shop:
-    def __init__(self, stock, queue_max, cashiers):
+    def __init__(self, stock, queue_max, cashiers, shop_type="shop"):
         self.stock = dict(stock)
         self.stock_lock = threading.Lock() # Lock for stock access
         self.queue_slots = threading.Semaphore(queue_max)  # Max fans in queue. 
         self.cashiers = threading.Semaphore(cashiers) # Number of cashiers
+        self.shop_type = shop_type  # Track whether this is food or merch
 
     def enter_queue(self, fan_name): # Fan tries to enter queue
-        log(f"🧍 {fan_name} attempts to enter food queue.")
+        log(f"🧍 {fan_name} attempts to enter {self.shop_type} queue.")
         self.queue_slots.acquire()
-        log(f"🧍 {fan_name} entered the food queue.")
+        log(f"🧍 {fan_name} entered the {self.shop_type} queue.")
 
     def leave_queue(self, fan_name): # Fan leaves queue
         self.queue_slots.release()
-        log(f"🏃 {fan_name} leaves the food queue.")
+        log(f"🏃 {fan_name} leaves the {self.shop_type} queue.")
 
     def buy(self, fan, item, price): # Fan tries to buy an item
         with self.cashiers: # Wait for a cashier availability
@@ -65,11 +66,11 @@ def create_shops_for_match(stadium_location, team1_name=None, team2_name=None):
     else:
         merch_data = BARCA_REAL_MERCH  # Default
     
-    food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in food_data]
-    merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in merch_data]
+    food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "food") for shop in food_data]
+    merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "merch") for shop in merch_data]
     
     return food_shops, merch_shops, food_data, merch_data
 
 # Default shops for backward compatibility
-food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in SPANISH_FOOD_SHOPS]
-merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS) for shop in BARCA_REAL_MERCH]
+food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "food") for shop in SPANISH_FOOD_SHOPS]
+merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "merch") for shop in BARCA_REAL_MERCH]
