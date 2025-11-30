@@ -507,7 +507,7 @@ def generate_fan_spending_chart_per_match(db_path, match_id, match_label, output
         return
     
     fans = [row[0] for row in data]
-    spending = [row[1] for row in data]
+    spending = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
     
     plt.figure(figsize=(12, 6))
     bars = plt.bar(fans, spending, color='#F57C00')
@@ -520,7 +520,7 @@ def generate_fan_spending_chart_per_match(db_path, match_id, match_label, output
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'${height:.0f}',
+                f'${height:,.0f}',
                 ha='center', va='bottom', fontweight='bold')
     
     filename = f"{output_dir}/match_{match_id}_top_spenders.png"
@@ -554,7 +554,7 @@ def generate_fan_spending_chart(db_path, output_dir="charts"):
         return
     
     fans = [row[0] for row in data]
-    spending = [row[1] for row in data]
+    spending = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
     
     plt.figure(figsize=(12, 6))
     bars = plt.bar(fans, spending, color='#F57C00')
@@ -567,7 +567,7 @@ def generate_fan_spending_chart(db_path, output_dir="charts"):
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'${height:.0f}',
+                f'${height:,.0f}',
                 ha='center', va='bottom', fontweight='bold')
     
     plt.savefig(f"{output_dir}/tournament_top_fan_spenders.png", dpi=300, bbox_inches='tight')
@@ -687,7 +687,7 @@ def generate_shop_revenue_chart_per_match(db_path, match_id, match_label, output
         return
     
     shop_types = [row[0].title() for row in data]
-    revenue = [row[1] for row in data]
+    revenue = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
     
     plt.figure(figsize=(8, 6))
     bars = plt.bar(shop_types, revenue, color=['#FF6F00', '#0277BD'])
@@ -699,7 +699,7 @@ def generate_shop_revenue_chart_per_match(db_path, match_id, match_label, output
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'${height:.0f}',
+                f'${height:,.0f}',
                 ha='center', va='bottom', fontweight='bold', fontsize=11)
     
     filename = f"{output_dir}/match_{match_id}_shop_revenue.png"
@@ -731,7 +731,7 @@ def generate_shop_revenue_chart(db_path, output_dir="charts"):
         return
     
     shop_types = [row[0].title() for row in data]
-    revenue = [row[1] for row in data]
+    revenue = [row[1] * STADIUM_CAPACITY_MULTIPLIER for row in data]
     
     plt.figure(figsize=(8, 6))
     bars = plt.bar(shop_types, revenue, color=['#FF6F00', '#0277BD'])
@@ -743,7 +743,7 @@ def generate_shop_revenue_chart(db_path, output_dir="charts"):
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'${height:.0f}',
+                f'${height:,.0f}',
                 ha='center', va='bottom', fontweight='bold', fontsize=11)
     
     plt.savefig(f"{output_dir}/tournament_shop_revenue.png", dpi=300, bbox_inches='tight')
@@ -888,7 +888,7 @@ def generate_match_summary_card(db_path, match_id, match_label, output_dir="char
     """, (match_id,))
     
     revenue_data = cursor.fetchone()
-    total_revenue = revenue_data[0] if revenue_data[0] else 0
+    total_revenue = (revenue_data[0] if revenue_data[0] else 0) * STADIUM_CAPACITY_MULTIPLIER
     
     conn.close()
     
@@ -910,7 +910,7 @@ def generate_match_summary_card(db_path, match_id, match_label, output_dir="char
     ax.text(0.5, 0.45, winner_text, ha='center', fontsize=16, fontweight='bold', color='green')
     
     # Revenue
-    ax.text(0.5, 0.30, f'💰 Total Revenue: ${total_revenue:.2f}', 
+    ax.text(0.5, 0.30, f'💰 Total Revenue: ${total_revenue:,.2f}', 
             ha='center', fontsize=14, fontweight='bold')
     
     plt.tight_layout()
