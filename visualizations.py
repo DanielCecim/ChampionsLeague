@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
+# Stadium capacity multiplier: 100 fans * 1000 = 100,000 (Camp Nou capacity)
+STADIUM_CAPACITY_MULTIPLIER = 1000
+
 
 def get_database_connection(db_path):
     """Get a connection to the SQLite database"""
