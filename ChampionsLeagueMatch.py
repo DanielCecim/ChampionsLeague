@@ -1,3 +1,4 @@
+# Disclaimer: AI has been used to assist in the creation of this file.
 import sys
 import multiprocessing as mp
 import threading
@@ -11,7 +12,6 @@ from fan_class import Fan
 from player_class import Player, Role
 from shop_class import Shop, create_shops_for_match
 from data_collector import DataCollector
-
 
 # Lock that allows only one thread to print at a time
 print_lock = threading.Lock() 
@@ -46,7 +46,7 @@ stadium = Stadium() # Our main stadium object
 
 tick_event = threading.Event()    # flag, every 5 seconds
 end_event = threading.Event()     # set when match is over
-pause_event = threading.Event()   # to pause the match when there is a streaker or halftime
+pause_event = threading.Event()   # to pause the match when there is a streaker
 pause_event.set() # initially set, match hasnt started
 
 stoppage_lock = threading.Lock()  #There are multiple events that can stop a match, streaks, penalties, faults, etc. Only one event can stop the clock at the time.
@@ -65,7 +65,7 @@ class Team:
 class Ball:
     def __init__(self):
         self.mutex = threading.Lock() # Lock for ball possession.
-        self.possession_lock = threading.Lock() # Lock for possession changes. 
+        self.possession_lock = threading.Lock() # Lock for possession changes.
         self.owner = None # Player who currently has the ball
         self.last_team = None # Last team that had the ball
 
@@ -79,22 +79,21 @@ class Ball:
         with self.possession_lock:
             return self.owner
 
-ball = Ball() # Our main ball object
+ball = Ball() # Our main ball object. Reset for each match.
 
 score_lock = threading.Lock() # Lock for score updates
-scoreboard = {} # Initial scores
+scoreboard = {} # Initial scores. Reset for each match.
 
 # Track current teams for the active match (set by orchestrator)
-current_teams = (None, None)
+current_teams = (None, None) 
 
-def get_opponent(team):
+def get_opponent(team): # Given a team, return the opposing team in the current match
     t1, t2 = current_teams
     if t1 is None or t2 is None:
         return None
     return t2 if team is t1 else t1
 
 # Clock
-
 class MatchClock(threading.Thread): # Match clock thread that ticks every 5 seconds to simulate 5 minutes.
     def __init__(self, tick_event, end_event):
         super().__init__(daemon=True) # This thread will not block program exit. This is important for cleanup.
@@ -126,14 +125,12 @@ class MatchClock(threading.Thread): # Match clock thread that ticks every 5 seco
         self.end_event.set()
 
 # Build Teams
-
 def build_team(name, players_dict):
     team = Team(name) # Create team object
     roles = [Role.GK] + [Role.DEF]*4 + [Role.MID]*4 + [Role.FWD]*2 # Define roles
     player_names = list(players_dict.keys())
     for i in range(min(TEAM_SIZE, len(player_names))): # Create players from the provided dict
         p_name = player_names[i]
-        # Player will be initialized with None for match resources - set later by orchestrator
         p = Player(
             team, p_name, roles[i], team.arrival_barrier, team.field_barrier, 
             players_dict.get(p_name, {}),
@@ -150,7 +147,7 @@ def build_team(name, players_dict):
             p.role = Role.DEF
     return team
 
-# Team builders - create fresh teams for each match to avoid thread reuse
+# Team builders
 def create_team_barcelona():
     return build_team("Barcelona", TEAM_BARCA_PLAYERS)
 
@@ -227,7 +224,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             p.get_opponent = get_opponent
             p.data_collector = self.data_collector
 
-        # Create fans with injected dependencies
+        # Create fans
         fans = []
         for i in range(NUM_FANS):
             fan = Fan(
@@ -250,7 +247,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             )
             fans.append(fan)
 
-        for f in fans:
+        for f in fans: # Start all fans threads
             f.start()
 
         time.sleep(0.4)
@@ -259,7 +256,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
 
         # Start only the players from the selected teams
         for p in self.team1.players + self.team2.players:
-            p.start()
+            p.start() # Start player threads
 
         time.sleep(1.0)
         log("🎤 Anthem starts.")
