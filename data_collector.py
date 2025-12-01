@@ -5,8 +5,6 @@ from datetime import datetime
 # This DataCollector object will be used to collect and store match statistics
 
 class DataCollector: # We create the data collector object in the main file
-    """Thread-safe data collector for match statistics"""
-    
     def __init__(self, db_path="champions_league_data.db", clear_existing=False):
         self.db_path = db_path
         self.lock = threading.Lock()
@@ -14,15 +12,12 @@ class DataCollector: # We create the data collector object in the main file
         
         if clear_existing:
             self.clear_all_data()
-        
-        # In-memory caches for current match
         self.player_stats = {}
         self.fan_stats = {}
         self.match_id = None
         self.match_start_time = None
         
-    def init_database(self):
-        """Initialize SQLite database with required tables"""
+    def init_database(self): # Initialize SQLite database with required tables
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -40,8 +35,7 @@ class DataCollector: # We create the data collector object in the main file
                 match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Migrate existing database: add stadium_location column if it doesn't exist
+
         try:
             cursor.execute("SELECT stadium_location FROM matches LIMIT 1")
         except sqlite3.OperationalError:
@@ -108,7 +102,7 @@ class DataCollector: # We create the data collector object in the main file
         conn.close()
     
     def clear_all_data(self):
-        """Clear all existing data from the database (for fresh tournament start)"""
+        # Clear all existing data from the database (for fresh tournament start)
         with self.lock:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -129,7 +123,7 @@ class DataCollector: # We create the data collector object in the main file
             print("🗑️  Cleared previous tournament data")
     
     def start_match(self, team1, team2, match_type="regular", stadium_location="Unknown"):
-        """Start tracking a new match"""
+        # Start tracking a new match
         with self.lock:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -148,7 +142,7 @@ class DataCollector: # We create the data collector object in the main file
         return self.match_id
     
     def end_match(self, score_team1, score_team2, winner):
-        """Finalize match data"""
+        # Finalize match data
         if self.match_id is None:
             return
         
@@ -164,7 +158,7 @@ class DataCollector: # We create the data collector object in the main file
             conn.close()
     
     def init_player(self, player_name, team, role):
-        """Initialize player statistics"""
+        # Initialize player statistics
         key = (player_name, team)
         with self.lock:
             if key not in self.player_stats:
@@ -186,7 +180,7 @@ class DataCollector: # We create the data collector object in the main file
                 }
     
     def init_fan(self, fan_name, initial_money, is_rich):
-        """Initialize fan statistics"""
+        # Initialize fan statistics
         with self.lock:
             if fan_name not in self.fan_stats:
                 self.fan_stats[fan_name] = {
@@ -201,14 +195,14 @@ class DataCollector: # We create the data collector object in the main file
                 }
     
     def record_pass(self, player_name, team):
-        """Record a pass"""
+        # Record a pass
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['passes'] += 1
     
     def record_shot(self, player_name, team, on_target=False, goal=False):
-        """Record a shot"""
+        # Record a shot
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
@@ -219,56 +213,56 @@ class DataCollector: # We create the data collector object in the main file
                     self.player_stats[key]['goals'] += 1
     
     def record_steal(self, player_name, team):
-        """Record a steal"""
+        # Record a steal
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['steals'] += 1
     
     def record_foul(self, player_name, team):
-        """Record a foul"""
+        # Record a foul
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['fouls_committed'] += 1
     
     def record_yellow_card(self, player_name, team):
-        """Record a yellow card"""
+        # Record a yellow card
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['yellow_cards'] += 1
     
     def record_expulsion(self, player_name, team):
-        """Record an expulsion"""
+        # Record an expulsion
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['expelled'] = 1
     
     def record_save(self, player_name, team):
-        """Record a goalkeeper save"""
+        # Record a goalkeeper save
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['saves'] += 1
     
     def record_ball_possession(self, player_name, team):
-        """Record ball possession"""
+        # Record ball possession
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['ball_possessions'] += 1
     
     def update_player_fatigue(self, player_name, team, fatigue_level):
-        """Update player fatigue level"""
+        # Update player fatigue level
         key = (player_name, team)
         with self.lock:
             if key in self.player_stats:
                 self.player_stats[key]['final_fatigue'] = fatigue_level
     
     def record_purchase(self, fan_name, item_name, price, shop_type):
-        """Record a fan purchase"""
+        # Record a fan purchase
         with self.lock:
             if fan_name in self.fan_stats:
                 self.fan_stats[fan_name]['items_purchased'] += 1
@@ -286,25 +280,25 @@ class DataCollector: # We create the data collector object in the main file
                 conn.close()
     
     def record_shop_visit(self, fan_name):
-        """Record a shop visit"""
+        # Record a shop visit
         with self.lock:
             if fan_name in self.fan_stats:
                 self.fan_stats[fan_name]['shop_visits'] += 1
     
     def record_streak(self, fan_name):
-        """Record a fan streaking"""
+        # Record a fan streaking
         with self.lock:
             if fan_name in self.fan_stats:
                 self.fan_stats[fan_name]['streaked'] = 1
     
     def update_fan_money(self, fan_name, final_money):
-        """Update fan's final money amount"""
+        # Update fan's final money amount
         with self.lock:
             if fan_name in self.fan_stats:
                 self.fan_stats[fan_name]['final_money'] = final_money
     
     def save_all_stats(self):
-        """Save all collected statistics to database"""
+        # Save all collected statistics to database
         if self.match_id is None:
             return
         
@@ -347,7 +341,7 @@ class DataCollector: # We create the data collector object in the main file
             conn.close()
     
     def get_match_summary(self, match_id):
-        """Get summary of a specific match"""
+        # Get summary of a specific match
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         

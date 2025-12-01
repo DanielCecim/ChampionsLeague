@@ -1,8 +1,6 @@
-"""
-Visualization Module
-Generates bar charts and other visualizations from Champions League match data
-Organized by match and overall tournament statistics
-"""
+# Visualization Module
+# Generates bar charts and other visualizations from Champions League match data
+# Organized by match and overall tournament statistics
 
 import sqlite3
 import matplotlib.pyplot as plt
@@ -14,12 +12,12 @@ STADIUM_CAPACITY_MULTIPLIER = 1000
 
 
 def get_database_connection(db_path):
-    """Get a connection to the SQLite database"""
+    # Get a connection to the SQLite database
     return sqlite3.connect(db_path)
 
 
 def get_all_matches(db_path):
-    """Get list of all matches with their IDs and details"""
+    # Get list of all matches with their IDs and details
     conn = get_database_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("""
@@ -33,7 +31,7 @@ def get_all_matches(db_path):
 
 
 def generate_player_goals_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of top goal scorers for a specific match"""
+    # Generate bar chart of top goal scorers for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -77,7 +75,7 @@ def generate_player_goals_chart_per_match(db_path, match_id, match_label, output
 
 
 def generate_player_goals_chart(db_path, output_dir="charts"):
-    """Generate bar chart of top goal scorers across ALL matches"""
+    # Generate bar chart of top goal scorers across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -121,7 +119,7 @@ def generate_player_goals_chart(db_path, output_dir="charts"):
 
 
 def generate_player_passes_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of players with most passes for a specific match"""
+    # Generate bar chart of players with most passes for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -165,7 +163,7 @@ def generate_player_passes_chart_per_match(db_path, match_id, match_label, outpu
 
 
 def generate_player_passes_chart(db_path, output_dir="charts"):
-    """Generate bar chart of players with most passes across ALL matches"""
+    # Generate bar chart of players with most passes across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -210,7 +208,7 @@ def generate_player_passes_chart(db_path, output_dir="charts"):
 
 
 def generate_player_steals_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of players with most steals for a specific match"""
+    # Generate bar chart of players with most steals for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -254,7 +252,7 @@ def generate_player_steals_chart_per_match(db_path, match_id, match_label, outpu
 
 
 def generate_player_steals_chart(db_path, output_dir="charts"):
-    """Generate bar chart of players with most steals across ALL matches"""
+    # Generate bar chart of players with most steals across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -298,7 +296,7 @@ def generate_player_steals_chart(db_path, output_dir="charts"):
 
 
 def generate_yellow_cards_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of disciplinary records for a specific match"""
+    # Generate bar chart of disciplinary records for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -345,7 +343,7 @@ def generate_yellow_cards_chart_per_match(db_path, match_id, match_label, output
 
 
 def generate_yellow_cards_chart(db_path, output_dir="charts"):
-    """Generate bar chart of players with most yellow cards across ALL matches"""
+    # Generate bar chart of players with most yellow cards across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -393,7 +391,7 @@ def generate_yellow_cards_chart(db_path, output_dir="charts"):
 
 
 def generate_goalkeeper_saves_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of goalkeeper saves for a specific match"""
+    # Generate bar chart of goalkeeper saves for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -436,7 +434,7 @@ def generate_goalkeeper_saves_chart_per_match(db_path, match_id, match_label, ou
 
 
 def generate_goalkeeper_saves_chart(db_path, output_dir="charts"):
-    """Generate bar chart of goalkeeper saves across ALL matches"""
+    # Generate bar chart of goalkeeper saves across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -479,7 +477,7 @@ def generate_goalkeeper_saves_chart(db_path, output_dir="charts"):
 
 
 def generate_fan_purchases_by_item_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of most purchased items for a specific match"""
+    # Generate bar chart of most purchased items for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -524,7 +522,7 @@ def generate_fan_purchases_by_item_chart_per_match(db_path, match_id, match_labe
 
 
 def generate_fan_purchases_by_item_chart(db_path, output_dir="charts"):
-    """Generate bar chart of most purchased items across ALL matches"""
+    # Generate bar chart of most purchased items across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -567,7 +565,7 @@ def generate_fan_purchases_by_item_chart(db_path, output_dir="charts"):
 
 
 def generate_shop_revenue_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate bar chart of shop revenue by type for a specific match"""
+    # Generate bar chart of shop revenue by type for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -610,7 +608,7 @@ def generate_shop_revenue_chart_per_match(db_path, match_id, match_label, output
 
 
 def generate_shop_revenue_chart(db_path, output_dir="charts"):
-    """Generate bar chart of shop revenue by type across ALL matches"""
+    # Generate bar chart of shop revenue by type across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -651,7 +649,7 @@ def generate_shop_revenue_chart(db_path, output_dir="charts"):
 
 
 def generate_team_statistics_comparison_per_match(db_path, match_id, match_label, output_dir="charts"):
-    """Generate grouped bar chart comparing team statistics for a specific match"""
+    # Generate grouped bar chart comparing team statistics for a specific match
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -705,7 +703,7 @@ def generate_team_statistics_comparison_per_match(db_path, match_id, match_label
 
 
 def generate_team_statistics_comparison(db_path, output_dir="charts"):
-    """Generate grouped bar chart comparing team statistics across ALL matches"""
+    # Generate grouped bar chart comparing team statistics across ALL matches
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -757,7 +755,7 @@ def generate_team_statistics_comparison(db_path, output_dir="charts"):
 
 
 def generate_match_summary_card(db_path, match_id, match_label, output_dir="charts"):
-    """Generate a summary card for a specific match showing final score and key stats"""
+    # Generate a summary card for a specific match showing final score and key stats
     Path(output_dir).mkdir(exist_ok=True)
     
     conn = get_database_connection(db_path)
@@ -817,7 +815,7 @@ def generate_match_summary_card(db_path, match_id, match_label, output_dir="char
 
 
 def generate_all_match_visualizations(db_path, match_id, match_label, output_dir="charts"):
-    """Generate all visualizations for a specific match"""
+    # Generate all visualizations for a specific match
     print(f"\n📊 Generating visualizations for {match_label}...")
     
     generate_match_summary_card(db_path, match_id, match_label, output_dir)
@@ -833,7 +831,7 @@ def generate_all_match_visualizations(db_path, match_id, match_label, output_dir
 
 
 def generate_all_visualizations(db_path, output_dir="charts"):
-    """Generate all visualization charts - both per-match and tournament overall"""
+    # Generate all visualization charts - both per-match and tournament overall
     print("\n📊 Generating visualizations...")
     
     # Get all matches

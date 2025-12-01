@@ -46,7 +46,7 @@ class Shop:
                 return True
 
 def create_shops_for_match(stadium_location, team1_name=None, team2_name=None):
-    """Create appropriate food and merch shops based on stadium location and teams"""
+    # Create appropriate food and merch shops based on stadium location and teams
     if stadium_location == "Allianz Arena":
         food_data = GERMAN_FOOD_SHOPS
     else:  # Bernabeu or Camp Nou

@@ -1,7 +1,5 @@
-"""
-Database Query Script
-Query and display Champions League match statistics from the database
-"""
+# Database Query Script
+# Query and display Champions League match statistics from the database
 
 import sqlite3
 import sys
@@ -9,7 +7,7 @@ from tabulate import tabulate
 
 
 def display_matches(db_path):
-    """Display all matches"""
+    # Display all matches
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -28,7 +26,7 @@ def display_matches(db_path):
 
 
 def display_player_stats(db_path, match_id=None):
-    """Display player statistics"""
+    # Display player statistics
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -69,7 +67,7 @@ def display_player_stats(db_path, match_id=None):
 
 
 def display_fan_stats(db_path, match_id=None):
-    """Display fan statistics"""
+    # Display fan statistics
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -107,7 +105,7 @@ def display_fan_stats(db_path, match_id=None):
 
 
 def display_purchases(db_path, limit=20):
-    """Display recent purchases"""
+    # Display recent purchases
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -127,7 +125,7 @@ def display_purchases(db_path, limit=20):
 
 
 def display_top_scorers(db_path):
-    """Display top goal scorers"""
+    # Display top goal scorers
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -151,7 +149,7 @@ def display_top_scorers(db_path):
 
 
 def display_team_summary(db_path):
-    """Display team summary statistics"""
+    # Display team summary statistics
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -177,7 +175,7 @@ def display_team_summary(db_path):
 
 
 def display_revenue_summary(db_path):
-    """Display revenue summary"""
+    # Display revenue summary
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     

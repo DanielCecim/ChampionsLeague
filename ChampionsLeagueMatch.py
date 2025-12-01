@@ -6,9 +6,6 @@ import random
 from players import (
     TEAM_BARCA_PLAYERS, TEAM_REAL_PLAYERS, TEAM_ATLETICO_PLAYERS, TEAM_PSG_PLAYERS
 )
-from food_shops import (
-    PROB_BUY_SOMETHING
-)
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fan_class import Fan
 from player_class import Player, Role
@@ -32,6 +29,7 @@ NUM_FANS = 100
 TEAM_SIZE = 11
 
 # Fan probabilities
+PROB_BUY_SOMETHING = [0.9]  # Probability that a fan buys something when visiting a shop
 PROB_QUEUE_VISIT = 0.5 # Chance to visit a shop
 PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan
 

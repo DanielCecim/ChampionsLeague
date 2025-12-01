@@ -40,7 +40,7 @@ class Fan(threading.Thread):
         self.has_shopped = False  # Track if fan has already shopped. Once they shop, they dont shop again. This is reasonable for a single match.
 
     def lookup_price(self, item):
-        """Helper to find price from globals. Item prices are stored in food_shops_data and merch_shops_data"""
+        # Helper to find price from globals. Item prices are stored in food_shops_data and merch_shops_data
         for shop_info in self.food_shops_data + self.merch_shops_data: # combine both food and merch shop data
             prices = shop_info.get("prices", {}) # get prices dict
             if item in prices:
@@ -134,7 +134,6 @@ class Fan(threading.Thread):
                 self.shop_during_match()
 
     def run(self):
-        #Main fan loop. From entering stadium to shopping to streaking.
         # Initialize fan stats in data collector
         if self.data_collector:
             self.data_collector.init_fan(self.name, self.initial_money, self.is_rich)

@@ -1,7 +1,4 @@
 # FoodShop configuration and creation based on stadium location
-PROB_BUY_SOMETHING = [0.9]
-SHOP_QUEUE_MAX = 12 # Max fans in queue
-CASHIERS = 2
 
 # Spanish food for Bernabeu and Camp Nou 
 SPANISH_FOOD_SHOPS = [
