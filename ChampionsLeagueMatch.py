@@ -10,7 +10,7 @@ from players import (
 from anthems import (ANTHEM_LINES_BARCELONA, ANTHEM_LINES_MADRID, ANTHEM_LINES_ATLETICO, ANTHEM_LINES_PSG)
 from fan_class import Fan
 from player_class import Player, Role
-from shop_class import Shop, create_shops_for_match
+from shop_class import create_shops_for_match
 from data_collector import DataCollector
 
 # Lock that allows only one thread to print at a time
@@ -23,7 +23,7 @@ def log(msg):
         now = time.time() - t0
         print(f"[{now:6.2f}s] {msg}")
 
-TICK_SECONDS = 5                  # 5 seconds = 5 minutes
+TICK_SECONDS = 5                 # 5 seconds = 5 minutes
 MATCH_TICKS = 18                  # 90 minutes total
 NUM_FANS = 100
 TEAM_SIZE = 11
@@ -52,12 +52,11 @@ pause_event.set() # initially set, match hasnt started
 stoppage_lock = threading.Lock()  #There are multiple events that can stop a match, streaks, penalties, faults, etc. Only one event can stop the clock at the time.
 foul_lock = threading.Lock()      # Only one faul can be happening at one time
 
-
 # Teams, Players, Ball
 
 class Team:
     def __init__(self, name):
-        self.name = name # "Barcelona" or "Real Madrid"
+        self.name = name 
         self.players = [] # List of Player objects
         self.arrival_barrier = threading.Barrier(TEAM_SIZE) # All players must arrive before proceeding
         self.field_barrier = threading.Barrier(TEAM_SIZE) # All players must reach field before proceeding
@@ -208,7 +207,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             "PSG": ANTHEM_LINES_PSG
         }
         
-        # Inject match resources into all players
+        # Assigning values to players
         for p in self.team1.players + self.team2.players:
             p.stadium = stadium
             p.end_event = end_event
