@@ -20,7 +20,7 @@ MATCH_TICKS = 18                  # 90 minutes total
 NUM_FANS = 100
 TEAM_SIZE = 11
 PROB_BUY_SOMETHING = [0.9]  # Probability that a fan buy
-PROB_QUEUE_VISIT = 0.5 # Chance to visit a shop
+PROB_QUEUE_VISIT = 0.8 # Chance to visit a shop
 PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan
 
 # Custom logging function with timestamp

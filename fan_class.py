@@ -69,7 +69,7 @@ class Fan(threading.Thread):
             if self.data_collector:
                 self.data_collector.record_shop_visit(self.name) # Record that fan visited a shop
             
-            time.sleep(random.uniform(0.1, 0.3)) # Simulate time in queue
+            time.sleep(random.uniform(0.3, 0.6)) # Simulate time in queue
             
             # Buy 1-2 items during match
             num_purchases = random.randint(1, 2) if self.is_rich else 1
@@ -91,7 +91,7 @@ class Fan(threading.Thread):
                         # Track purchase
                         if self.data_collector:
                             self.data_collector.record_purchase(self.name, choice, price, shop_type)
-                        time.sleep(random.uniform(0.05, 0.15))
+                        time.sleep(random.uniform(0.2, 0.4))
                     else:
                         break
             shop_obj.leave_queue(self.name) # Fan leaves the queue
@@ -179,7 +179,7 @@ class Fan(threading.Thread):
             if self.data_collector: 
                 self.data_collector.record_shop_visit(self.name)
             
-            time.sleep(random.uniform(0.1, 0.5))
+            time.sleep(random.uniform(0.3, 0.8))
             num_purchases = random.randint(2, 4) if self.is_rich else 1 #  Rich fans buy 2-4 items, regular fans buy 1 item
 
             for _ in range(num_purchases):
@@ -203,7 +203,7 @@ class Fan(threading.Thread):
                         # Track purchase
                         if self.data_collector:
                             self.data_collector.record_purchase(self.name, choice, price, shop_type)
-                        time.sleep(random.uniform(0.1, 0.3))
+                        time.sleep(random.uniform(0.2, 0.5))
                     else:
                         break
             shop_obj.leave_queue(self.name)  # Fan leaves the queue

@@ -12,7 +12,7 @@ def log(msg):
         now = time.time() - t0
         print(f"[{now:6.2f}s] {msg}")
 
-SHOP_QUEUE_MAX = 12  # Max fans allowed in shop queue
+SHOP_QUEUE_MAX = 6  # Max fans allowed in shop queue
 CASHIERS = 2            # Number of cashiers available
 
 class Shop:
