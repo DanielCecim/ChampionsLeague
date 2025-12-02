@@ -233,7 +233,15 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
 
         # Create fans
         fans = []
+        # Filter anthems to only include teams playing in this match
+        playing_teams = [self.team1.name, self.team2.name]
+        match_anthems = {team: anthem_map[team] for team in playing_teams if team in anthem_map}
+        
+        # Split fans 50-50 between the two teams
         for i in range(NUM_FANS):
+            # First 50 fans support team1, next 50 support team2
+            supporting_team = self.team1.name if i < NUM_FANS // 2 else self.team2.name
+            
             fan = Fan(
                 i, 
                 stadium=stadium, 
@@ -250,7 +258,9 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
                 merch_shops=merch_shops,
                 food_shops_data=food_data, 
                 merch_shops_data=merch_data,
-                data_collector=self.data_collector
+                data_collector=self.data_collector,
+                anthems=match_anthems,  # Pass only anthems for teams playing
+                supporting_team=supporting_team  # Assign which team this fan supports
             )
             fans.append(fan)
 

@@ -6,7 +6,7 @@ from fans import FAN_NAMES
 
 class Fan(threading.Thread):
     
-    def __init__(self, idx, stadium=None, end_event=None, pause_event=None, tick_event=None, ball=None, log=None, stoppage_lock=None, prob_streak_match=None, prob_queue_visit=None, prob_buy_something=0.9,food_shops=None, merch_shops=None, food_shops_data=None, merch_shops_data=None, data_collector=None):
+    def __init__(self, idx, stadium=None, end_event=None, pause_event=None, tick_event=None, ball=None, log=None, stoppage_lock=None, prob_streak_match=None, prob_queue_visit=None, prob_buy_something=0.9,food_shops=None, merch_shops=None, food_shops_data=None, merch_shops_data=None, data_collector=None, anthems=None, supporting_team=None):
         super().__init__(daemon=True)
         self.name = FAN_NAMES[idx]
         
@@ -19,6 +19,8 @@ class Fan(threading.Thread):
         self.log = log
         self.stoppage_lock = stoppage_lock
         self.data_collector = data_collector
+        self.anthems = anthems  # Store anthem lines
+        self.supporting_team = supporting_team  # Which team this fan supports
         
         # Probabilities and shop data
         self.prob_streak_match = prob_streak_match
@@ -144,6 +146,25 @@ class Fan(threading.Thread):
         self.log(f"🚪 {self.name} enters the stadium.")
 
         time.sleep(random.uniform(0.1, 0.6)) # Simulate time to find seat
+        
+        # Wait for anthem ceremony and sing with their team
+        self.stadium.anthem_start.wait()
+        if self.supporting_team and self.anthems:
+            anthem_lines = self.anthems.get(self.supporting_team, [])
+            if anthem_lines:
+                # Determine which anthem event to wait for based on team
+                # Check if this fan supports team1 (first to sing)
+                team_names = list(self.anthems.keys())
+                is_team1 = self.supporting_team == team_names[0] if len(team_names) > 0 else False
+                
+                if is_team1:
+                    self.stadium.team1_anthem.wait()
+                else:
+                    self.stadium.team2_anthem.wait()
+                
+                # Sing a random line from their team's anthem
+                line = random.choice(anthem_lines)
+                self.log(f"🎵 {self.name} sings: {line}")
         if random.random() < self.prob_queue_visit:
             # random shop is picked from the union of food and merch shops
             all_shops = self.food_shops + self.merch_shops
