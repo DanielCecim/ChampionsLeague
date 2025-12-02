@@ -1,7 +1,5 @@
 # Champions League Match Simulator
 
-A multi-threaded Python simulation of Champions League football matches featuring realistic player behaviors, fan interactions, stadium shops, and comprehensive statistics tracking.
-
 ## Overview
 
 This project simulates a complete Champions League tournament with 3 matches (2 semi-finals + 1 final) featuring Barcelona, Real Madrid, Atletico Madrid, and PSG. The simulation uses Python threading to model concurrent behaviors of players, fans, and match events in real-time.
@@ -54,16 +52,9 @@ ChampionsLeague/
 ├── champions_league_data.db   # SQLite database (auto-generated)
 └── charts/                    # Generated visualization images
 ```
-
-## Requirements
-
-```bash
-pip install matplotlib numpy tabulate
-```
-
 ## Usage
 
-### Run Tournament (Sequential Mode)
+### Run Tournament
 ```bash
 python3 ChampionsLeagueMatch.py
 ```
@@ -74,12 +65,6 @@ This runs 3 matches sequentially:
 3. **Final**: Winners @ Allianz Arena (Munich)
 
 After completion, visualizations are automatically generated in the `charts/` folder.
-
-### Run Concurrent Mode (Experimental)
-```bash
-python3 ChampionsLeagueMatch.py concurrent
-```
-Runs both semi-finals simultaneously using multiprocessing.
 
 ### View Database Statistics
 ```bash
@@ -290,10 +275,3 @@ Same categories aggregated across all matches.
 - Web-based visualization dashboard
 - Real-time match viewer
 
-## Authors
-
-Created with assistance from AI.
-
-## License
-
-This project is for educational purposes.
