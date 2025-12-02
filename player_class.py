@@ -1,30 +1,25 @@
+# Disclaimer: AI has been used to assist in the creation of this file.
 import threading
 import time
 import random
 from enum import Enum
 
-# Re-import what Player needs
 from players import (
     PROB_FOUL_DEF, PROB_FOUL_MID, PROB_STEAL_DEF_BY_FWD,
     PROB_STEAL_MID_BY_MID, PROB_STEAL_FWD_BY_DEF_OR_GK,
     PROB_SHOT_FWD, PROB_SAVE_BY_GK, PROB_SHOT_ON_TARGET
 )
 
-# Role enum
 class Role(Enum):
     GK = "GK"
     DEF = "DEF"
     MID = "MID"
     FWD = "FWD"
 
-# Player helper functions
-
-def role_str(role: Role):
-    """Convert role enum to string"""
+def role_str(role: Role): 
     return role.value
 
-def allowed_pass_targets(player):
-    """Determine allowed pass targets based on player role"""
+def allowed_pass_targets(player): # Determine allowed pass targets based on player role
     if player.role == Role.FWD:
         return [Role.FWD, Role.MID]
     if player.role == Role.MID:
@@ -35,8 +30,7 @@ def allowed_pass_targets(player):
         return [Role.DEF, Role.MID, Role.FWD]
     return []
 
-def can_steal(attacker, owner):
-    """Determine if attacker can steal from owner and the probability"""
+def can_steal(attacker, owner): # Determine if attacker can steal from owner and the probability
     if owner is None or attacker.team.name == owner.team.name:
         return False, 0.0
     if owner.role == Role.FWD and attacker.role in (Role.DEF, Role.GK):
@@ -47,16 +41,14 @@ def can_steal(attacker, owner):
         return True, attacker.probs.get(PROB_STEAL_DEF_BY_FWD, 0.0)
     return False, 0.0
 
-def choose_midfielder(team):
-    """Choose a midfielder from the team for kickoff"""
+def choose_midfielder(team):# Choose a midfielder from the team for kickoff
     mids = [p for p in team.players if p.role == Role.MID]
     if mids:
         return random.choice(mids)
     non_gk = [p for p in team.players if p.role != Role.GK]
     return random.choice(non_gk) if non_gk else team.players[0]
 
-def restart_after_goal(scoring_team, ball, log, scoreboard, score_lock, get_opponent):
-    """Restart match after a goal"""
+def restart_after_goal(scoring_team, ball, log, get_opponent): # Restart play after a goal
     other = get_opponent(scoring_team)
     if other is None:
         return
@@ -66,25 +58,22 @@ def restart_after_goal(scoring_team, ball, log, scoreboard, score_lock, get_oppo
     log(f"⚽ Ball now with {mid}.")
 
 # Player Thread
-
 class Player(threading.Thread):
-    """Player thread representing a soccer player"""
-    
     def __init__(self, team, name, role, team_arrival_barrier, field_barrier, data=None,
                  stadium=None, end_event=None, pause_event=None, tick_event=None,
                  ball=None, log=None, anthems=None, scoreboard=None, score_lock=None,
-                 stoppage_lock=None, foul_lock=None, get_opponent=None, data_collector=None):
+                 stoppage_lock=None, foul_lock=None, get_opponent=None, data_collector=None): # Set all player parameters
         super().__init__(daemon=True)
         self.team = team
         self.pname = name
         self.role = role
-        self.team_arrival_barrier = team_arrival_barrier
-        self.field_barrier = field_barrier
+        self.team_arrival_barrier = team_arrival_barrier # This barrier ensures all players arrive before proceeding
+        self.field_barrier = field_barrier # This barrier ensures all players are on the field before starting
         self.data = data or {}
         
         # Shared match resources
         self.stadium = stadium
-        self.end_event = end_event
+        self.end_event = end_event # Event to signal end of match
         self.pause_event = pause_event
         self.tick_event = tick_event
         self.ball = ball
@@ -117,22 +106,21 @@ class Player(threading.Thread):
         self.probs = dict(self.data.get("probs", {}))
         self.original_probs = dict(self.probs)  # Keep original values
         self.fatigue_reduction = 0.01  # Amount to reduce per tick
-        
         # Yellow card tracking. 
         self.yellow_cards = 0
         self.is_expelled = False
 
     def apply_fatigue(self):
-        """Reduce all player probabilities due to fatigue"""
+        # Reduce all player probabilities due to fatigue
         for prob_key in self.probs:
             self.probs[prob_key] = max(0.0, self.probs[prob_key] - self.fatigue_reduction)
 
     def __str__(self):
-        """String representation of player"""
+        # String representation of player
         return f"{self.team.name}-{self.pname}({role_str(self.role)})"
 
     def pass_ball(self):
-        """Player attempts to pass the ball"""
+        # Player attempts to pass the ball
         if self.is_expelled:  # Expelled players can't pass
             return None
         roles = allowed_pass_targets(self)
@@ -150,7 +138,7 @@ class Player(threading.Thread):
         return target
 
     def consider_shot(self):
-        """Player considers taking a shot"""
+        # Player considers taking a shot
         if self.is_expelled:  # Expelled players can't shoot
             return False
         if self.role != Role.FWD:
@@ -186,7 +174,7 @@ class Player(threading.Thread):
                     if self.data_collector:
                         self.data_collector.record_shot(self.pname, self.team.name, on_target=True, goal=True)
                     
-                    restart_after_goal(self.team, self.ball, self.log, self.scoreboard, self.score_lock, self.get_opponent)
+                    restart_after_goal(self.team, self.ball, self.log, self.get_opponent)
             else:
                 self.log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
                 self.ball.set_owner(gk)
@@ -198,7 +186,7 @@ class Player(threading.Thread):
         return False
 
     def attempt_foul_on_forward_owner(self):
-        """Attempt to foul the forward who has the ball"""
+        # Attempt to foul the forward who has the ball
         if self.role not in (Role.DEF, Role.MID):
             return
         if self.is_expelled:  # Expelled players can't foul
@@ -240,7 +228,7 @@ class Player(threading.Thread):
                 self.foul_lock.release()
 
     def handle_penalty(self, fouled_forward):
-        """Handle a penalty kick"""
+        # Handle a penalty kick
         self.stoppage_lock.acquire()
         try:
             self.pause_event.clear()
@@ -266,7 +254,7 @@ class Player(threading.Thread):
                 if self.data_collector:
                     self.data_collector.record_shot(fouled_forward.pname, fouled_forward.team.name, on_target=True, goal=True)
                 
-                restart_after_goal(shooting_team, self.ball, self.log, self.scoreboard, self.score_lock, self.get_opponent)
+                restart_after_goal(shooting_team, self.ball, self.log, self.get_opponent)
             else:
                 if on_target:
                     self.log(f"🧤 Penalty by {fouled_forward} SAVED by {gk}!")
@@ -289,7 +277,7 @@ class Player(threading.Thread):
             self.foul_lock.release()
 
     def attempt_steal_window(self):
-        """Attempt to steal the ball from opponent"""
+        # Attempt to steal the ball from opponent
         if self.is_expelled:  # Expelled players can't steal
             return
         owner = self.ball.get_owner()
@@ -311,7 +299,7 @@ class Player(threading.Thread):
                     self.ball.mutex.release()
 
     def ball_handler_tick(self):
-        """Handle ball possession on tick"""
+        # Handle ball possession on tick
         if self.is_expelled:  # Expelled players can't handle ball
             return
         if not self.pause_event.is_set():
@@ -328,7 +316,7 @@ class Player(threading.Thread):
             self.ball.mutex.release()
 
     def run(self):
-        """Main player loop"""
+        # Main player loop
         self.log(f"🚌 {self} arriving at stadium.")
         self.team_arrival_barrier.wait()
         self.log(f"🧳 {self} heads to locker room.")

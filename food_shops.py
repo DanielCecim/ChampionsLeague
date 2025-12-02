@@ -1,5 +1,3 @@
-# FoodShop configuration and creation based on stadium location
-
 # Spanish food for Bernabeu and Camp Nou 
 SPANISH_FOOD_SHOPS = [
   {"stock": {"paella": 40, "churros": 60, "tapas": 50}, "prices": {"paella": 12, "churros": 5, "tapas": 8}},

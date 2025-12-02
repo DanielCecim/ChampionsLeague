@@ -175,7 +175,7 @@ def display_team_summary(db_path):
 
 
 def display_revenue_summary(db_path):
-    # Display revenue summary
+    """Display revenue summary"""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     

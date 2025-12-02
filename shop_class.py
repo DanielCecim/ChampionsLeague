@@ -1,3 +1,4 @@
+# Disclaimer: AI has been used to assist in the creation of this file.
 import threading
 from food_shops import SPANISH_FOOD_SHOPS, GERMAN_FOOD_SHOPS
 from merch_shops import BARCA_REAL_MERCH, ATLETICO_PSG_MERCH, get_finals_merch

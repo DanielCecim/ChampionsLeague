@@ -1,3 +1,4 @@
+# Disclaimer: AI has been used to assist in the creation of this file.
 import sqlite3
 import threading
 from datetime import datetime
