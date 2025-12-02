@@ -79,7 +79,13 @@ def create_shops_for_match(stadium_location, team1_name=None, team2_name=None):
         merch_data = BARCA_REAL_MERCH  # Default
     
     food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "food") for shop in food_data]
-    merch_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "merch") for shop in merch_data]
+    
+    # Merge all merch shops into one shop with combined stock
+    combined_merch_stock = {}
+    for shop in merch_data:
+        combined_merch_stock.update(shop["stock"])
+    
+    merch_shops = [Shop(combined_merch_stock, SHOP_QUEUE_MAX, CASHIERS, "merch")]
     
     return food_shops, merch_shops, food_data, merch_data
 
