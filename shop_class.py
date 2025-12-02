@@ -16,12 +16,13 @@ SHOP_QUEUE_MAX = 6  # Max fans allowed in shop queue
 CASHIERS = 2            # Number of cashiers available
 
 class Shop:
-    def __init__(self, stock, queue_max, cashiers, shop_type="shop"):
+    def __init__(self, stock, queue_max, cashiers, shop_type="shop", shop_id=None):
         self.stock = dict(stock)
         self.stock_lock = threading.Lock() # Lock for stock access
         self.queue_slots = threading.Semaphore(queue_max)  # Max fans in queue. 
         self.cashiers = threading.Semaphore(cashiers) # Number of cashiers
         self.shop_type = shop_type  # Track whether this is food or merch
+        self.shop_id = shop_id  # Shop identifier (e.g., "food shop 1")
         self.queue_max = queue_max  # Store max queue size
         self.current_queue_count = 0  # Track current queue occupancy
         self.queue_count_lock = threading.Lock()  # Lock for queue count
@@ -29,19 +30,21 @@ class Shop:
     def enter_queue(self, fan_name): # Fan tries to enter queue
         with self.queue_count_lock:
             current = self.current_queue_count
-        log(f"🧍 {fan_name} tried to enter the queue (Current queue: {current}/{self.queue_max})")
+        shop_name = self.shop_id if self.shop_id else self.shop_type
+        log(f"🧍 {fan_name} tried to enter the {shop_name} queue (Current queue: {current}/{self.queue_max})")
         self.queue_slots.acquire()
         with self.queue_count_lock:
             self.current_queue_count += 1
             current = self.current_queue_count
-        log(f"🧍 {fan_name} entered the {self.shop_type} queue (Current queue: {current}/{self.queue_max})")
+        log(f"🧍 {fan_name} entered the {shop_name} queue (Current queue: {current}/{self.queue_max})")
 
     def leave_queue(self, fan_name): # Fan leaves queue
         self.queue_slots.release()
         with self.queue_count_lock:
             self.current_queue_count -= 1
             current = self.current_queue_count
-        log(f"🏃 {fan_name} leaves the {self.shop_type} queue (Current queue: {current}/{self.queue_max})")
+        shop_name = self.shop_id if self.shop_id else self.shop_type
+        log(f"🏃 {fan_name} leaves the {shop_name} queue (Current queue: {current}/{self.queue_max})")
 
     def buy(self, fan, item, price): # Fan tries to buy an item
         with self.cashiers: # Wait for a cashier availability
@@ -78,14 +81,14 @@ def create_shops_for_match(stadium_location, team1_name=None, team2_name=None):
     else:
         merch_data = BARCA_REAL_MERCH  # Default
     
-    food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "food") for shop in food_data]
+    food_shops = [Shop(shop["stock"], SHOP_QUEUE_MAX, CASHIERS, "food", f"food shop {i+1}") for i, shop in enumerate(food_data)]
     
     # Merge all merch shops into one shop with combined stock
     combined_merch_stock = {}
     for shop in merch_data:
         combined_merch_stock.update(shop["stock"])
     
-    merch_shops = [Shop(combined_merch_stock, SHOP_QUEUE_MAX, CASHIERS, "merch")]
+    merch_shops = [Shop(combined_merch_stock, SHOP_QUEUE_MAX, CASHIERS, "merch", "merch shop")]
     
     return food_shops, merch_shops, food_data, merch_data
 
