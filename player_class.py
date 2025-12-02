@@ -325,7 +325,13 @@ class Player(threading.Thread):
         self.log(f"🚶 {self} walking to tunnel.")
         self.field_barrier.wait()
 
-        self.stadium.anthem_start.wait()
+        self.stadium.anthem_start.wait()  # Wait for anthem ceremony to begin
+        
+        # Wait for this team's turn to sing
+        if hasattr(self, 'is_team1') and self.is_team1:
+            self.stadium.team1_anthem.wait()
+        else:
+            self.stadium.team2_anthem.wait()
         
         # Get anthem lines for this team
         anthem_lines = self.anthems.get(self.team.name, [])

@@ -38,7 +38,9 @@ def get_opponent(team): # Given a team, return the opposing team in the current 
 class Stadium:
     def __init__(self):
         self.gates_open = threading.Event() # Fans can enter
-        self.anthem_start = threading.Event() # Anthems start
+        self.anthem_start = threading.Event() # Anthems start (for both teams to reach position)
+        self.team1_anthem = threading.Event() # Team 1 sings
+        self.team2_anthem = threading.Event() # Team 2 sings
         self.match_start = threading.Event() # Match starts
 
 # Teams, Players, Ball
@@ -197,7 +199,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
         }
         
         # Assigning values to players
-        for p in self.team1.players + self.team2.players:
+        for p in self.team1.players:
             p.stadium = stadium
             p.end_event = end_event
             p.pause_event = pause_event
@@ -211,6 +213,23 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             p.foul_lock = foul_lock
             p.get_opponent = get_opponent
             p.data_collector = self.data_collector
+            p.is_team1 = True  # Mark as team1
+        
+        for p in self.team2.players:
+            p.stadium = stadium
+            p.end_event = end_event
+            p.pause_event = pause_event
+            p.tick_event = tick_event
+            p.ball = ball
+            p.log = log
+            p.anthems = anthem_map
+            p.scoreboard = scoreboard
+            p.score_lock = score_lock
+            p.stoppage_lock = stoppage_lock
+            p.foul_lock = foul_lock
+            p.get_opponent = get_opponent
+            p.data_collector = self.data_collector
+            p.is_team1 = False  # Mark as team2
 
         # Create fans
         fans = []
@@ -247,10 +266,18 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             p.start() # Start player threads
 
         time.sleep(1.0)
-        log("🎤 Anthem starts.")
-        stadium.anthem_start.set()
-
-        time.sleep(0.8)
+        log("🎤 Anthems ceremony begins.")
+        stadium.anthem_start.set()  # Signal both teams to get ready
+        
+        time.sleep(0.3)
+        log(f"🎶 {self.team1.name} sings their anthem...")
+        stadium.team1_anthem.set()  # Team 1 sings
+        time.sleep(1.5)  # Wait for team 1 to finish
+        
+        log(f"🎶 {self.team2.name} sings their anthem...")
+        stadium.team2_anthem.set()  # Team 2 sings
+        time.sleep(1.5)  # Wait for team 2 to finish
+        
         kickoff_owner = random.choice(self.team1.players + self.team2.players)
         log("🏟️ Match starts!")
         ball.set_owner(kickoff_owner)
