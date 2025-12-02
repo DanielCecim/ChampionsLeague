@@ -13,27 +13,26 @@ from player_class import Player, Role
 from shop_class import create_shops_for_match
 from data_collector import DataCollector
 
-# Lock that allows only one thread to print at a time
-print_lock = threading.Lock() 
 t0 = time.time()
-
-# Custom logging function with timestamp
-def log(msg):
-    with print_lock:
-        now = time.time() - t0
-        print(f"[{now:6.2f}s] {msg}")
 
 TICK_SECONDS = 5                 # 5 seconds = 5 minutes
 MATCH_TICKS = 18                  # 90 minutes total
 NUM_FANS = 100
 TEAM_SIZE = 11
-
-# Fan probabilities
-PROB_BUY_SOMETHING = [0.9]  # Probability that a fan buys something when visiting a shop
+PROB_BUY_SOMETHING = [0.9]  # Probability that a fan buy
 PROB_QUEUE_VISIT = 0.5 # Chance to visit a shop
 PROB_STREAK_MATCH = 0.0000001        # 0.00001% per fan
 
-random.seed(7)
+# Custom logging function with timestamp
+def log(msg):
+    now = time.time() - t0
+    print(f"[{now:6.2f}s] {msg}")
+
+def get_opponent(team): # Given a team, return the opposing team in the current match
+    t1, t2 = current_teams
+    if t1 is None or t2 is None:
+        return None
+    return t2 if team is t1 else t1
 
 #Stadium class, essentially multiple event flags.
 class Stadium:
@@ -41,16 +40,6 @@ class Stadium:
         self.gates_open = threading.Event() # Fans can enter
         self.anthem_start = threading.Event() # Anthems start
         self.match_start = threading.Event() # Match starts
-
-stadium = Stadium() # Our main stadium object
-
-tick_event = threading.Event()    # flag, every 5 seconds
-end_event = threading.Event()     # set when match is over
-pause_event = threading.Event()   # to pause the match when there is a streaker
-pause_event.set() # initially set, match hasnt started
-
-stoppage_lock = threading.Lock()  #There are multiple events that can stop a match, streaks, penalties, faults, etc. Only one event can stop the clock at the time.
-foul_lock = threading.Lock()      # Only one faul can be happening at one time
 
 # Teams, Players, Ball
 
@@ -78,19 +67,19 @@ class Ball:
         with self.possession_lock:
             return self.owner
 
+stadium = Stadium() # Our main stadium object
 ball = Ball() # Our main ball object. Reset for each match.
-
+tick_event = threading.Event()    # flag, every 5 seconds
+end_event = threading.Event()     # set when match is over
+pause_event = threading.Event()   # to pause the match when there is a streaker or faul
+stoppage_lock = threading.Lock()  #There are multiple events that can stop a match, streaks, penalties, faults, etc. Only one event can stop the clock at the time.
+foul_lock = threading.Lock()      # Only one faul can be happening at one time
 score_lock = threading.Lock() # Lock for score updates
 scoreboard = {} # Initial scores. Reset for each match.
 
 # Track current teams for the active match (set by orchestrator)
 current_teams = (None, None) 
-
-def get_opponent(team): # Given a team, return the opposing team in the current match
-    t1, t2 = current_teams
-    if t1 is None or t2 is None:
-        return None
-    return t2 if team is t1 else t1
+pause_event.set() # initially set, match hasnt started
 
 # Clock
 class MatchClock(threading.Thread): # Match clock thread that ticks every 5 seconds to simulate 5 minutes.

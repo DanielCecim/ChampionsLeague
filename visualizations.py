@@ -6,6 +6,10 @@ import sqlite3
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
+import warnings
+
+# Suppress matplotlib font warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='matplotlib')
 
 # Stadium capacity multiplier: 100 fans * 1000 = 100,000 (Camp Nou capacity)
 STADIUM_CAPACITY_MULTIPLIER = 1000
@@ -71,7 +75,6 @@ def generate_player_goals_chart_per_match(db_path, match_id, match_label, output
     filename = f"{output_dir}/match_{match_id}_goal_scorers.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {filename}")
 
 
 def generate_player_goals_chart(db_path, output_dir="charts"):
@@ -94,7 +97,6 @@ def generate_player_goals_chart(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No goal data available")
         return
     
     players = [f"{row[0]} ({row[1]})" for row in data]
@@ -182,7 +184,6 @@ def generate_player_passes_chart(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No pass data available")
         return
     
     players = [f"{row[0]} ({row[1]})" for row in data]
@@ -204,7 +205,6 @@ def generate_player_passes_chart(db_path, output_dir="charts"):
     
     plt.savefig(f"{output_dir}/tournament_top_passers.png", dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"✓ Saved: {output_dir}/tournament_top_passers.png")
 
 
 def generate_player_steals_chart_per_match(db_path, match_id, match_label, output_dir="charts"):
@@ -271,7 +271,6 @@ def generate_player_steals_chart(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No steal data available")
         return
     
     players = [f"{row[0]} ({row[1]})" for row in data]
@@ -362,7 +361,6 @@ def generate_yellow_cards_chart(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No disciplinary data available")
         return
     
     players = [f"{row[0]} ({row[1]})" for row in data]
@@ -452,7 +450,6 @@ def generate_goalkeeper_saves_chart(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No goalkeeper save data available")
         return
     
     players = [f"{row[0]} ({row[1]})" for row in data]
@@ -540,7 +537,6 @@ def generate_fan_purchases_by_item_chart(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No purchase data available")
         return
     
     items = [row[0] for row in data]
@@ -625,7 +621,6 @@ def generate_shop_revenue_chart(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No shop revenue data available")
         return
     
     shop_types = [row[0].title() for row in data]
@@ -724,7 +719,6 @@ def generate_team_statistics_comparison(db_path, output_dir="charts"):
     conn.close()
     
     if not data:
-        print("No team statistics available")
         return
     
     teams = [row[0] for row in data]
@@ -816,7 +810,6 @@ def generate_match_summary_card(db_path, match_id, match_label, output_dir="char
 
 def generate_all_match_visualizations(db_path, match_id, match_label, output_dir="charts"):
     # Generate all visualizations for a specific match
-    print(f"\n📊 Generating visualizations for {match_label}...")
     
     generate_match_summary_card(db_path, match_id, match_label, output_dir)
     generate_player_goals_chart_per_match(db_path, match_id, match_label, output_dir)
@@ -832,13 +825,11 @@ def generate_all_match_visualizations(db_path, match_id, match_label, output_dir
 
 def generate_all_visualizations(db_path, output_dir="charts"):
     # Generate all visualization charts - both per-match and tournament overall
-    print("\n📊 Generating visualizations...")
     
     # Get all matches
     matches = get_all_matches(db_path)
     
     if not matches:
-        print("No match data available")
         return
     
     # Generate per-match visualizations
@@ -851,7 +842,6 @@ def generate_all_visualizations(db_path, output_dir="charts"):
         generate_all_match_visualizations(db_path, match_id, match_label, output_dir)
     
     # Generate tournament-wide statistics
-    print(f"\n📊 Generating tournament overall statistics...")
     generate_player_goals_chart(db_path, output_dir)
     generate_player_passes_chart(db_path, output_dir)
     generate_player_steals_chart(db_path, output_dir)
