@@ -1,19 +1,17 @@
-# Spanish food for Bernabeu and Camp Nou 
+# Spanish food for Bernabeu and Atletico Stadium
 SPANISH_FOOD_SHOPS = [
-  {"stock": {"paella": 40, "churros": 60, "tapas": 50}, "prices": {"paella": 12, "churros": 5, "tapas": 8}},
-  {"stock": {"bocadillos": 50, "patatas bravas": 70, "sangria": 60}, "prices": {"bocadillos": 7, "patatas bravas": 6, "sangria": 8}},
-  {"stock": {"jamon iberico": 30, "tortilla": 45, "agua": 100}, "prices": {"jamon iberico": 15, "tortilla": 9, "agua": 2}},
-  {"stock": {"croquetas": 55, "gazpacho": 40, "cerveza": 80}, "prices": {"croquetas": 7, "gazpacho": 6, "cerveza": 5}},
-  {"stock": {"empanadas": 50, "churros": 60, "horchata": 50}, "prices": {"empanadas": 8, "churros": 5, "horchata": 4}},
+  {"stock": {"paella": 20, "churros": 30, "tapas": 25}, "prices": {"paella": 12, "churros": 5, "tapas": 8}},
+  {"stock": {"bocadillos": 25, "patatas bravas": 35, "sangria": 30}, "prices": {"bocadillos": 7, "patatas bravas": 6, "sangria": 8}},
+  {"stock": {"jamon iberico": 15, "tortilla": 23, "agua": 50}, "prices": {"jamon iberico": 15, "tortilla": 9, "agua": 2}},
+  {"stock": {"croquetas": 28, "gazpacho": 20, "cerveza": 40}, "prices": {"croquetas": 7, "gazpacho": 6, "cerveza": 5}},
+  {"stock": {"empanadas": 25, "churros": 30, "horchata": 25}, "prices": {"empanadas": 8, "churros": 5, "horchata": 4}},
 ]
 
 # German typical food for Allianz Arena (Munich)
 GERMAN_FOOD_SHOPS = [
-  {"stock": {"bratwurst": 60, "pretzel": 80, "beer": 100}, "prices": {"bratwurst": 8, "pretzel": 5, "beer": 6}},
-  {"stock": {"currywurst": 50, "sauerkraut": 40, "weissbier": 70}, "prices": {"currywurst": 9, "sauerkraut": 5, "weissbier": 7}},
-  {"stock": {"schnitzel": 35, "kartoffelsalat": 45, "radler": 60}, "prices": {"schnitzel": 12, "kartoffelsalat": 6, "radler": 5}},
-  {"stock": {"leberkase": 40, "brezen": 70, "apfelschorle": 80}, "prices": {"leberkase": 7, "brezen": 4, "apfelschorle": 4}},
-  {"stock": {"kasespatzle": 30, "rollmops": 25, "cola": 90}, "prices": {"kasespatzle": 10, "rollmops": 6, "cola": 3}},
+  {"stock": {"bratwurst": 30, "pretzel": 40, "beer": 50}, "prices": {"bratwurst": 8, "pretzel": 5, "beer": 6}},
+  {"stock": {"currywurst": 25, "sauerkraut": 20, "weissbier": 35}, "prices": {"currywurst": 9, "sauerkraut": 5, "weissbier": 7}},
+  {"stock": {"schnitzel": 18, "kartoffelsalat": 23, "radler": 30}, "prices": {"schnitzel": 12, "kartoffelsalat": 6, "radler": 5}},
+  {"stock": {"leberkase": 20, "brezen": 35, "apfelschorle": 40}, "prices": {"leberkase": 7, "brezen": 4, "apfelschorle": 4}},
+  {"stock": {"kasespatzle": 15, "rollmops": 13, "cola": 45}, "prices": {"kasespatzle": 10, "rollmops": 6, "cola": 3}},
 ]
-
-FOOD_SHOPS = SPANISH_FOOD_SHOPS
