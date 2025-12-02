@@ -321,9 +321,21 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
         elif s2 > s1:
             return self.team2
         else:
-            # In case of tie, pick winner randomly
+            # In case of tie, go to penalties
+            log(f"⚽ Match tied! Going to penalty shootout...")
+            time.sleep(0.5)
+            log(f"🥅 {self.team1.name} takes their penalties...")
+            time.sleep(0.3)
+            log(f"🥅 {self.team2.name} takes their penalties...")
+            time.sleep(0.3)
             winner = random.choice([self.team1, self.team2])
-            log(f"🎲 Match tied! {winner.name} advances by coin toss.")
+            log(f"🎯 {winner.name} wins on penalties!")
+            
+            # Update data collector with penalty winner
+            if self.data_collector:
+                self.data_collector.end_match(s1, s2, winner.name)
+                self.data_collector.save_all_stats()
+            
             return winner
 
 
