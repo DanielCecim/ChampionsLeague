@@ -49,5 +49,3 @@ def get_finals_merch(team1_name, team2_name):
   if team2_name in FINALS_MERCH_TEMPLATE:
     merch.extend(FINALS_MERCH_TEMPLATE[team2_name])
   return merch
-
-MERCH_SHOPS = BARCA_REAL_MERCH

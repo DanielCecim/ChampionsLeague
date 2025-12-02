@@ -213,7 +213,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             p.foul_lock = foul_lock
             p.get_opponent = get_opponent
             p.data_collector = self.data_collector
-            p.is_team1 = True  # Mark as team1
+            p.is_team1 = True 
         
         for p in self.team2.players:
             p.stadium = stadium
@@ -229,7 +229,7 @@ class MatchOrchestrator:  # Threads are started here, acts like main()
             p.foul_lock = foul_lock
             p.get_opponent = get_opponent
             p.data_collector = self.data_collector
-            p.is_team1 = False  # Mark as team2
+            p.is_team1 = False 
 
         # Create fans
         fans = []
