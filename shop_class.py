@@ -22,15 +22,26 @@ class Shop:
         self.queue_slots = threading.Semaphore(queue_max)  # Max fans in queue. 
         self.cashiers = threading.Semaphore(cashiers) # Number of cashiers
         self.shop_type = shop_type  # Track whether this is food or merch
+        self.queue_max = queue_max  # Store max queue size
+        self.current_queue_count = 0  # Track current queue occupancy
+        self.queue_count_lock = threading.Lock()  # Lock for queue count
 
     def enter_queue(self, fan_name): # Fan tries to enter queue
-        log(f"🧍 {fan_name} attempts to enter {self.shop_type} queue.")
+        with self.queue_count_lock:
+            current = self.current_queue_count
+        log(f"🧍 {fan_name} tried to enter the queue (Current queue: {current}/{self.queue_max})")
         self.queue_slots.acquire()
-        log(f"🧍 {fan_name} entered the {self.shop_type} queue.")
+        with self.queue_count_lock:
+            self.current_queue_count += 1
+            current = self.current_queue_count
+        log(f"🧍 {fan_name} entered the {self.shop_type} queue (Current queue: {current}/{self.queue_max})")
 
     def leave_queue(self, fan_name): # Fan leaves queue
         self.queue_slots.release()
-        log(f"🏃 {fan_name} leaves the {self.shop_type} queue.")
+        with self.queue_count_lock:
+            self.current_queue_count -= 1
+            current = self.current_queue_count
+        log(f"🏃 {fan_name} leaves the {self.shop_type} queue (Current queue: {current}/{self.queue_max})")
 
     def buy(self, fan, item, price): # Fan tries to buy an item
         with self.cashiers: # Wait for a cashier availability
