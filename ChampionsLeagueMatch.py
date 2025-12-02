@@ -372,7 +372,7 @@ if __name__ == "__main__":
         time.sleep(1.0)
         
         log("🏆 === SEMI-FINAL 2 ===")
-        winner2 = run_single_match(create_team_atletico(), create_team_psg(), data_collector, "Bernabeu")
+        winner2 = run_single_match(create_team_atletico(), create_team_psg(), data_collector, "Riyadh Air Metropolitano")
         log(f"🎉 {winner2.name} advances to the FINAL!\n")
         
         time.sleep(2.0)
