@@ -176,8 +176,24 @@ class Player(threading.Thread):
                     
                     restart_after_goal(self.team, self.ball, self.log, self.get_opponent)
             else:
-                self.log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
-                self.ball.set_owner(gk)
+                # 50% chance for corner when shot is off target
+                if random.random() < 0.5:
+                    # Corner! Midfielder passes to forward
+                    mids = [p for p in self.team.players if p.role == Role.MID and not p.is_expelled]
+                    fwds = [p for p in self.team.players if p.role == Role.FWD and not p.is_expelled]
+                    
+                    if mids and fwds:
+                        corner_taker = random.choice(mids)
+                        corner_receiver = random.choice(fwds)
+                        self.log(f"🚩 Shot by {self} is OFF target. CORNER! {corner_taker} takes the corner to {corner_receiver}.")
+                        self.ball.set_owner(corner_receiver)
+                    else:
+                        # Fallback if no valid players
+                        self.log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
+                        self.ball.set_owner(gk)
+                else:
+                    self.log(f"🎯 Shot by {self} is OFF target. Goal kick to {gk}.")
+                    self.ball.set_owner(gk)
                 
                 # Track missed shot
                 if self.data_collector:
